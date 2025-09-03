@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" fill="#d6b15e">
+  <path d="M40 20c-5.5 0-10 4.5-10 10s4.5 10 10 10h120c5.5 0 10-4.5 10-10s-4.5-10-10-10H40z" />
+  <path d="M50 40c-5.5 0-10 4.5-10 10s4.5 10 10 10h100c5.5 0 10-4.5 10-10s-4.5-10-10-10H50z" />
+  <path d="M60 60c-5.5 0-10 4.5-10 10s4.5 10 10 10h80c5.5 0 10-4.5 10-10s-4.5-10-10-10H60z" />
+  <text x="100" y="40" font-family="Arial" font-size="24" font-weight="bold" text-anchor="middle" fill="#0e2c52">ARC</text>
+</svg>
