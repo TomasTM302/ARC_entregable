@@ -238,7 +238,7 @@ function AuxiliarTaskReportModalComponent({ isOpen, onClose }: AuxiliarTaskRepor
 
   // Usar la función autoTable en lugar de depender de la inyección al prototipo
 
-      // Add header with logo
+  // Add header with logo
       doc.setFillColor(13, 44, 82) // Color corporativo
       doc.rect(0, 0, 210, 25, "F")
       doc.setTextColor(255, 255, 255)
@@ -247,7 +247,7 @@ function AuxiliarTaskReportModalComponent({ isOpen, onClose }: AuxiliarTaskRepor
 
       // Intentar agregar logo si está disponible
       try {
-        const logoUrl = "/arc-logo.svg"
+        const logoUrl = "/images/arcos-logo.png"
         const canvas = document.createElement("canvas")
         const ctx = canvas.getContext("2d")
         const img = new Image()
@@ -262,8 +262,11 @@ function AuxiliarTaskReportModalComponent({ isOpen, onClose }: AuxiliarTaskRepor
         canvas.width = img.width
         canvas.height = img.height
         ctx?.drawImage(img, 0, 0)
-        const logoData = canvas.toDataURL("image/png")
-        doc.addImage(logoData, "PNG", 10, 5, 15, 15)
+  const logoData = canvas.toDataURL("image/png")
+  // Fondo azul detrás del logo
+  doc.setFillColor(14, 44, 82)
+  doc.roundedRect(8, 4, 22, 18, 2, 2, "F")
+  doc.addImage(logoData, "PNG", 10, 5, 18, 15)
       } catch (logoError) {
         console.error("Error al cargar el logo:", logoError)
         // Continuar sin logo

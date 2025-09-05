@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, QrCode, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import ImageUpload from "@/components/image-upload"
 import { useVisitorStore } from "@/lib/visitor-store"
 import { useAuthStore } from "@/lib/auth"
 
@@ -32,12 +31,14 @@ export default function InvitadosPage() {
     companions: "",
   })
   const [pdfData, setPdfData] = useState<FormValues | null>(null)
-  const [images, setImages] = useState<string[]>([])
+  // Subida de imágenes deshabilitada en este apartado
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [showQR, setShowQR] = useState(false)
   const [qrData, setQrData] = useState<string>("")
+  const [qrSnapshot, setQrSnapshot] = useState<string>("")
+  const [qrPreviewBase64, setQrPreviewBase64] = useState<string | null>(null)
   const [residentInfo, setResidentInfo] = useState({ condominium: "", address: "" })
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
 
@@ -85,12 +86,12 @@ export default function InvitadosPage() {
         if (!Number.isInteger(n) || n < 0) throw new Error("Acompañantes ≥ 0")
       }
 
-      // Registrar invitado
-      addVisitor({ ...formData, photoUrl: images[0] })
+  // Registrar invitado (sin foto)
+  addVisitor({ ...formData })
       setSuccess("Invitado registrado correctamente")
 
-      // Guardar snapshot para PDF
-      setPdfData({ ...formData })
+  // Guardar snapshot para PDF
+  setPdfData({ ...formData })
 
       // Construir contenido multilínea para QR
       const acomp = formData.companions ? `\nACOMPAÑANTES: ${formData.companions}` : ""
@@ -103,6 +104,18 @@ export default function InvitadosPage() {
         acomp
 
       setQrData(content)
+      setQrSnapshot(content)
+      // Generar QR base64 local para vista previa (idéntico al del PDF)
+      ;(async () => {
+        try {
+          const QRCode = (await import("qrcode")).default
+          const dataUrl = await QRCode.toDataURL(content, { errorCorrectionLevel: "M", margin: 1, width: 200 })
+          setQrPreviewBase64(dataUrl)
+        } catch (e) {
+          console.warn("No se pudo generar QR local para vista previa:", e)
+          setQrPreviewBase64(null)
+        }
+      })()
       setShowQR(true)
 
       // Limpiar formulario tras 5s
@@ -115,7 +128,6 @@ export default function InvitadosPage() {
           destination: residentInfo.address,
           companions: "",
         })
-        setImages([])
         setSuccess(null)
       }, 5000)
     } catch (err) {
@@ -130,18 +142,17 @@ export default function InvitadosPage() {
     handleGenerateQR(e as any)
   }
 
-  const handleImagesChange = (imgs: string[]) => {
-    setImages(imgs)
-  }
 
   // Cambia el nombre del archivo de logo y agrega manejo de error en getBase64Image
   const getBase64Image = async (url: string): Promise<string> => {
     try {
       // Reemplaza espacios por guiones para evitar errores de ruta
       const safeUrl = url.replace(/ /g, "-");
-      const res = await fetch(safeUrl)
+  console.log("[getBase64Image] fetching:", safeUrl)
+  const res = await fetch(safeUrl)
       if (!res.ok) throw new Error(`No se pudo cargar la imagen: ${safeUrl}`)
       const blob = await res.blob()
+  console.log("[getBase64Image] blob size:", blob.size)
       return await new Promise((resl, rej) => {
         const reader = new FileReader()
         reader.onload = () => resl(reader.result as string)
@@ -198,18 +209,25 @@ doc
   );
 
 
-// 5) QR a la izquierda
-const qrPayload = JSON.stringify({
-  name: formData.name,
-  phone: formData.phone,
-  date: new Date(formData.visitDate).toISOString(),
-  entry: formData.entryTime,
+// 5) QR a la izquierda (generado localmente y usando el mismo contenido que la vista previa)
+const dataForPdf = pdfData || formData;
+const qrString = qrSnapshot && qrSnapshot.length > 0
+  ? qrSnapshot
+  : (
+      `NOMBRE: ${dataForPdf.name}\n` +
+      `TELÉFONO: ${dataForPdf.phone}\n` +
+      `FECHA: ${dataForPdf.visitDate}\n` +
+      `HORA: ${dataForPdf.entryTime}\n` +
+      `DIRECCIÓN: ${dataForPdf.destination}` +
+      (dataForPdf.companions ? `\nACOMPAÑANTES: ${dataForPdf.companions}` : "")
+    );
+const QRCode = (await import("qrcode")).default;
+const qrBase64 = await QRCode.toDataURL(qrString, {
+  errorCorrectionLevel: "M",
+  margin: 1,
+  width: 200,
 });
-const qrBase64 = await getBase64Image(
-  `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-    qrPayload
-  )}`
-);
+console.log("[exportToPDF] qrBase64 prefix:", qrBase64.substring(0, 30));
 const qrSize = 80;
 const qrX    = 15;
 const qrY    = 60;
@@ -219,10 +237,10 @@ doc.addImage(qrBase64, "PNG", qrX, qrY, qrSize, qrSize);
 let cursorY = qrY+20;
 const textX = qrX + qrSize + 15;
 const fields = [
-  ["NOMBRE:", formData.name],
-  ["TELÉFONO:", formData.phone],
-  ["FECHA DE VISITA:", new Date(formData.visitDate).toLocaleDateString("es-MX")],
-  ["HORA MÁX. ENTRADA:", formData.entryTime],
+  ["NOMBRE:", dataForPdf.name],
+  ["TELÉFONO:", dataForPdf.phone],
+  ["FECHA DE VISITA:", dataForPdf.visitDate ? new Date(dataForPdf.visitDate).toLocaleDateString("es-MX") : ""],
+  ["HORA MÁX. ENTRADA:", dataForPdf.entryTime],
 ];
 fields.forEach(([label, value]) => {
   doc
@@ -445,28 +463,7 @@ doc.addImage(KMBase64, "PNG", KMX, KMY,50, 35);
                 </div>
               </div>
 
-              {/* Subir foto del invitado (opcional) */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium border-b pb-2">Fotografía del Invitado</h3>
-                <p className="text-sm text-gray-500 mb-2">
-                  La fotografía es opcional, pero ayuda a identificar al invitado en la entrada.
-                </p>
-                <ImageUpload maxFiles={1} maxSize={5} folder="invitados" onImagesChange={handleImagesChange} />
-
-                {images.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-2">
-                    {images.map((url, idx) => (
-                      <div key={idx} className="relative">
-                        <img
-                          src={url || "/placeholder.svg"}
-                          alt={`Foto invitado ${idx + 1}`}
-                          className="h-24 w-full object-cover rounded-md border"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {/* Subida de fotografías deshabilitada en este apartado */}
 
               {/* Botón Generar QR y Registrar */}
               <div className="pt-4">
@@ -490,7 +487,7 @@ doc.addImage(KMBase64, "PNG", KMX, KMY,50, 35);
               <div className="flex justify-center">
                 <div className="bg-white p-4 rounded-lg shadow-md">
                   <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`}
+                    src={qrPreviewBase64 || `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`}
                     alt="QR Code"
                     className="w-48 h-48"
                   />

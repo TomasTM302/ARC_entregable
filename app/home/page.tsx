@@ -55,13 +55,15 @@ export default function Home() {
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           {/* Logo */}
           <Link href="/home" className="flex items-center">
-            <Image
-              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/arcos-logo-gold-SmYxo3YbzpR6cSrez7b5uPEi6BQn5m.png"
-              alt="ARCOS Logo"
-              width={48}
-              height={48}
-              className="object-contain"
-            />
+            <div className="bg-[#0e2c52] rounded-md p-1 shadow-sm">
+              <Image
+                src="/images/arcos-logo.png"
+                alt="ARCOS Logo"
+                width={72}
+                height={72}
+                className="object-contain"
+              />
+            </div>
           </Link>
 
           {/* User Info and Actions */}

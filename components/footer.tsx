@@ -7,8 +7,8 @@ export default function Footer() {
       <div className="container mx-auto flex flex-col md:flex-row items-center justify-between px-4">
         <div className="flex items-center mb-4 md:mb-0">
           <h2 className="text-white text-xl mr-6">Panel de control</h2>
-          <div className="w-24 h-12 relative">
-            <Image src="/images/arc-logo.svg" alt="ARCOS Logo" fill className="object-contain" />
+          <div className="w-32 h-16 relative rounded-md p-1 shadow-sm bg-[#0e2c52]">
+            <Image src="/images/arcos-logo.png" alt="ARCOS Logo" fill className="object-contain" />
           </div>
         </div>
 

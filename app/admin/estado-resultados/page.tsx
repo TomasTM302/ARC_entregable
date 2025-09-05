@@ -654,7 +654,7 @@ export default function EstadoResultadosPage() {
                       <div className="bg-white rounded-lg shadow-sm border p-4">
                         <div className="flex justify-center mb-4">
                           <Image
-                            src="/images/arcos-logo-gold.png"
+                            src="/images/arcos-logo.png"
                             alt="ARC Residential Management"
                             width={180}
                             height={120}
@@ -1410,13 +1410,15 @@ export default function EstadoResultadosPage() {
               {/* Encabezado del reporte */}
               <div className="text-center mb-6">
                 <div className="flex justify-center mb-4">
-                  <Image
-                    src="/images/arcos-logo-gold.png"
-                    alt="ARC Residential Management"
-                    width={150}
-                    height={100}
-                    className="object-contain"
-                  />
+                  <div className="bg-[#0e2c52] rounded-md p-1 shadow-sm inline-block">
+                    <Image
+                      src="/images/arcos-logo.png"
+                      alt="ARC Residential Management"
+                      width={180}
+                      height={120}
+                      className="object-contain"
+                    />
+                  </div>
                 </div>
                 <h2 className="text-2xl font-bold">{computedFinancialData.title}</h2>
                 <h3 className="text-xl font-semibold">{computedFinancialData.subtitle}</h3>

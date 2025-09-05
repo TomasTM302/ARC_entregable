@@ -75,7 +75,7 @@ function AdminTaskReportModalComponent({ isOpen, onClose }: AdminTaskReportModal
 
       // Intentar agregar logo si está disponible (se prueban varias rutas conocidas)
       {
-        const tryAddLogo = async (paths: string[]) => {
+    const tryAddLogo = async (paths: string[]) => {
           for (const p of paths) {
             try {
               const canvas = document.createElement("canvas")
@@ -91,7 +91,10 @@ function AdminTaskReportModalComponent({ isOpen, onClose }: AdminTaskReportModal
               canvas.height = img.height
               ctx?.drawImage(img, 0, 0)
               const logoData = canvas.toDataURL("image/png")
-              doc.addImage(logoData, "PNG", 10, 5, 15, 15)
+              // Fondo azul detrás del logo
+              doc.setFillColor(14, 44, 82)
+      doc.roundedRect(8, 4, 22, 18, 2, 2, "F")
+      doc.addImage(logoData, "PNG", 10, 5, 18, 15)
               return true
             } catch (_) {
               // continuar con el siguiente path

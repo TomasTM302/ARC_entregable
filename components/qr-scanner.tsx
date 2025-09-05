@@ -84,15 +84,19 @@ export function QrScanner({ onScan, onError, width = 300, height = 300 }: QrScan
               {
                 fps: 10,
                 qrbox: { width: 250, height: 250 },
-                // Use a number instead of the enum
-                formatsToSupport: [0], // 0 is the code for QR_CODE
               },
               (decodedText) => {
                 onScan(decodedText)
               },
               (errorMessage) => {
-                // Ignore frequent errors during scanning
-                if (typeof errorMessage === "string" && errorMessage.includes("No QR code found")) {
+                // Ignorar errores esperados cuando no hay código en cuadro para evitar spam en consola
+                const msg = String(errorMessage)
+                if (
+                  msg &&
+                  (msg.includes("No QR code found") ||
+                    msg.includes("NotFoundException") ||
+                    msg.includes("No MultiFormat Readers"))
+                ) {
                   return
                 }
                 console.log("QR Scanner error:", errorMessage)
