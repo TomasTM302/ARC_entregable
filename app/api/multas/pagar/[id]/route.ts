@@ -19,7 +19,9 @@ export async function PATCH(_req: Request, { params }: { params: { id: string } 
     if (rows[0].estado === 'cancelada') {
       return NextResponse.json({ success: false, message: 'No se puede pagar una multa cancelada' }, { status: 400 })
     }
-    await db.query('UPDATE multas SET estado = "pagada" WHERE id = ?', [id])
+  // Registrar estado y fecha de pago
+  const now = new Date().toISOString().slice(0, 19).replace('T', ' ')
+  await db.query('UPDATE multas SET estado = "pagada", fecha_pago = COALESCE(fecha_pago, ?) WHERE id = ?', [now, id])
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('Error al marcar como pagada:', err)

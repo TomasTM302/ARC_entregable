@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect, type ChangeEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { QrScanner } from "@/components/qr-scanner"
-import { ScanBarcode, Shield, X, CheckCircle, AlertTriangle, UserCircle2 } from "lucide-react" // Added UserCircle2
+import { ScanBarcode, Shield, X, CheckCircle, AlertTriangle } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/use-toast"
@@ -12,7 +12,7 @@ import Image from "next/image"
 import { useAuthStore } from "@/lib/auth"
 
 interface QrData {
-  [key: string]: string
+  [key: string]: string | undefined
   FOTO_INVITADO_URL?: string // Added for guest photo URL from QR
 }
 
@@ -362,15 +362,7 @@ export default function VigilanteDashboardPage() {
                 />
               </div>
             )}
-            {!guestPhotoUrlFromQR &&
-              currentParsedData && ( // Show placeholder if no photo URL in QR
-                <div className="mb-4 text-center">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Foto del Invitado (Registrada)</p>
-                  <div className="w-[150px] h-[150px] mx-auto border rounded-md flex items-center justify-center bg-gray-100">
-                    <UserCircle2 className="w-16 h-16 text-gray-400" />
-                  </div>
-                </div>
-              )}
+            {/* Si no hay URL de foto en el QR, no mostramos nada para el invitado */}
 
             {currentParsedData &&
               Object.entries(currentParsedData).map(([key, value]) => {

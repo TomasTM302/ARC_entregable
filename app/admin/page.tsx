@@ -208,24 +208,7 @@ export default function AdminPanelPage() {
               </div>
             </Link>
 
-            {/* Tarjeta de Seguridad */}
-            <Link href="/vigilancia" className="block">
-              <div className="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow h-[200px] flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold text-gray-800">Seguridad</h2>
-                    <div className="p-3 bg-[#f9f1dc] rounded-full">
-                      <ShieldAlert className="h-6 w-6 text-[#d6b15e]" />
-                    </div>
-                  </div>
-                  <p className="text-gray-600">Gestiona la seguridad del residencial</p>
-                </div>
-                <div className="flex items-center">
-                  <span className="text-2xl font-bold text-gray-800">12</span>
-                  <span className="ml-2 text-sm text-gray-500">reportes de seguridad</span>
-                </div>
-              </div>
-            </Link>
+          
 
             {/* Tarjeta de Comercios Cercanos */}
             <Link href="/admin/comercios" className="block">
@@ -265,24 +248,7 @@ export default function AdminPanelPage() {
               </div>
             </Link>
 
-            {/* Nueva Tarjeta de Auxiliares */}
-            <Link href="/admin/auxiliares" className="block">
-              <div className="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow h-[200px] flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold text-gray-800">Auxiliares</h2>
-                    <div className="p-3 bg-[#f9f1dc] rounded-full">
-                      <Tool className="h-6 w-6 text-[#d6b15e]" />
-                    </div>
-                  </div>
-                  <p className="text-gray-600">Gestiona el personal auxiliar del residencial</p>
-                </div>
-                <div className="flex items-center">
-                  <span className="text-2xl font-bold text-gray-800">3</span>
-                  <span className="ml-2 text-sm text-gray-500">auxiliares activos</span>
-                </div>
-              </div>
-            </Link>
+          
 
             {/* Nueva Tarjeta de Estado de Resultados */}
             <Link href="/admin/estado-resultados" className="block">

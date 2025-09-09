@@ -29,7 +29,7 @@ import AdminTaskReportModal from "@/components/admin/admin-task-report-modal"
 import AdminTaskDetailModal from "@/components/admin/admin-task-detail-modal"
 
 export default function AdminTasksPage() {
-  const { user, users } = useAuthStore();
+  const { user, users, fetchUsers } = useAuthStore();
   const [tasks, setTasks] = useState<any[]>([]);
   const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -56,6 +56,8 @@ export default function AdminTasksPage() {
           title: t.titulo ?? "(Sin título)",
           description: t.descripcion ?? "",
           assignedTo: t.asignado_a ? String(t.asignado_a) : "",
+          assignedName: t.asignado_nombre || t.asignado_apellido ? `${t.asignado_nombre || ''} ${t.asignado_apellido || ''}`.trim() : undefined,
+          assignedEmail: t.asignado_email || undefined,
           createdBy: t.creado_por ? String(t.creado_por) : "",
           condominiumId: t.condominio_id ? String(t.condominio_id) : "",
           priority: t.prioridad === 'alta' ? 'high' : t.prioridad === 'media' ? 'medium' : 'low',
@@ -81,6 +83,15 @@ export default function AdminTasksPage() {
       })
       .catch(() => setTasks([]));
   }, []);
+
+  // Cargar usuarios (para resolver nombres asignados)
+  React.useEffect(() => {
+    if (!users || users.length === 0) {
+      (async () => {
+        try { await fetchUsers(); } catch {}
+      })();
+    }
+  }, [users?.length, fetchUsers]);
 
   // Filtrar tareas por estado
   const pendingTasks = tasks.filter((task) => task.status === "pending")
@@ -121,10 +132,42 @@ export default function AdminTasksPage() {
     return format(new Date(dateString), "dd MMM yyyy", { locale: es })
   }
 
-  // Función para obtener el nombre del usuario
-  const getUserName = (userId: string) => {
-    const user = users.find((u) => String(u.id) === String(userId))
-    return user ? `${user.firstName} ${user.lastName}` : "Usuario desconocido"
+  // Resolver usuario por id, email o nombre completo
+  const resolveAssignedUser = (key?: string | null) => {
+    if (!key) return null
+    const k = String(key).trim()
+    // por id exacto
+    let u = users.find((u) => String(u.id) === k)
+    if (u) return u
+    // por email
+    u = users.find((u) => (u.email || '').toLowerCase() === k.toLowerCase())
+    if (u) return u
+    // por nombre completo exacto
+    u = users.find((u) => `${u.firstName} ${u.lastName}`.toLowerCase() === k.toLowerCase())
+    if (u) return u
+    // por nombre que contenga
+    u = users.find((u) => `${u.firstName} ${u.lastName}`.toLowerCase().includes(k.toLowerCase()))
+    return u || null
+  }
+
+  const getUserName = (userKey?: string, fallbackName?: string, fallbackEmail?: string) => {
+    if (!userKey) return fallbackName || "Sin asignar"
+    const u = resolveAssignedUser(userKey) || (fallbackEmail ? resolveAssignedUser(fallbackEmail) : null)
+    if (u) return `${u.firstName} ${u.lastName}`
+    if (fallbackName && fallbackName.trim().length > 0) return fallbackName
+    return "Usuario desconocido"
+  }
+
+  const getUserRoleLabel = (userKey?: string) => {
+    const u = userKey ? resolveAssignedUser(userKey) : null
+    if (!u) return "—"
+    switch (u.role) {
+      case 'admin': return 'Administrador'
+      case 'vigilante': return 'Vigilante'
+      case 'mantenimiento': return 'Mantenimiento'
+      case 'resident': return 'Residente'
+      default: return '—'
+    }
   }
 
   // Función para manejar el cambio de estado de una tarea (actualiza en el backend SQL)
@@ -596,8 +639,8 @@ export default function AdminTasksPage() {
                             </td>
                             <td className="py-3 px-4">
                               <div className="flex flex-col">
-                                <span className="font-medium">{getUserName(task.assignedTo)}</span>
-                                <span className="text-xs text-blue-600">Administrador</span>
+                                <span className="font-medium">{getUserName(task.assignedTo, task.assignedName, task.assignedEmail)}</span>
+                                <span className="text-xs text-blue-600">{getUserRoleLabel(task.assignedTo)}</span>
                               </div>
                             </td>
                             <td className="py-3 px-4">

@@ -5,7 +5,18 @@ import db from "@/lib/db"
 export async function GET(req: Request) {
   try {
     const [rows] = await db.query(`
-      SELECT * FROM tareas_administrativas ORDER BY fecha_creacion DESC
+      SELECT 
+        t.*, 
+        ua.nombre  AS asignado_nombre,
+        ua.apellido AS asignado_apellido,
+        ua.email   AS asignado_email,
+        uc.nombre  AS creador_nombre,
+        uc.apellido AS creador_apellido,
+        uc.email   AS creador_email
+      FROM tareas_administrativas t
+      LEFT JOIN usuarios ua ON ua.id = t.asignado_a
+      LEFT JOIN usuarios uc ON uc.id = t.creado_por
+      ORDER BY t.fecha_creacion DESC
     `)
     return NextResponse.json({ success: true, tareas: rows })
   } catch (err) {

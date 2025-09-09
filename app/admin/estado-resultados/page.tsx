@@ -10,22 +10,9 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts"
+import dynamic from "next/dynamic"
 import type { MaintenancePayment } from "@/lib/types"
+const ChartsSection = dynamic(() => import("@/components/admin/estado-resultados/ChartsSection"), { ssr: false })
 import { useEffect } from "react"
 
 // Array de nombres de meses
@@ -92,8 +79,8 @@ const initialFinancialData = {
       amounts: [6500.0, 3000.0, 500.0, 1000.0, 1500.0, 2500.0, 0, 2200.0],
     },
     {
-      concept: "EVENTOS EN TERRAZA",
-      detail: "Terraza",
+      concept: "EVENTOS EN ÁREAS",
+      detail: "Áreas comunes",
       amounts: [1500.0, 1000.0, 1000.0, 0, 500.0, 500.0, 1000.0, 0],
     },
     {
@@ -361,7 +348,11 @@ export default function EstadoResultadosPage() {
   const { user } = useAuthStore()
   const [selectedMonth, setSelectedMonth] = useState(currentMonth.toString())
   const [selectedYear, setSelectedYear] = useState(currentYear.toString())
-  const [selectedCondominium, setSelectedCondominium] = useState("Puerta Natura C5")
+  // Cargar condominios desde la API y seleccionar uno
+  const [condoOptions, setCondoOptions] = useState<Array<{ id: string; name: string }>>([])
+  const [selectedCondominium, setSelectedCondominium] = useState("") // guardará el id
+  // Modo de visualización de pagos anuales: concentrar (todo en mes de cobro) vs amortizar (mes del periodo)
+  const [showAnnualAsSingleMonth, setShowAnnualAsSingleMonth] = useState(true)
   const [expandedSections, setExpandedSections] = useState({
     ingresos: true,
     gastos: true,
@@ -376,16 +367,51 @@ export default function EstadoResultadosPage() {
     // Inicializar con los datos base y actualizar el título con el condominio seleccionado
     return {
       ...initialFinancialData,
-      title: `REPORTE FINANCIERO ${selectedCondominium}`,
+      title: `REPORTE FINANCIERO`,
       period: `ACUMULADO A DICIEMBRE ${selectedYear}`,
     }
   })
 
-  // TODO: Conectar con API real de pagos y reservaciones
+  // Cargar datos reales agregados de la API
   const [maintenancePayments, setMaintenancePayments] = useState<MaintenancePayment[]>([])
+  const [aggregatedIncome, setAggregatedIncome] = useState<any | null>(null)
+  const [metaCounts, setMetaCounts] = useState<{ advanceCount?: number[] } | null>(null)
   useEffect(() => {
     let cancelled = false
-    const load = async () => {
+    const loadCondos = async () => {
+      try {
+        const res = await fetch(`/api/condominios?activo=1&simple=1`)
+        const data = await res.json()
+        if (!cancelled && data?.success && Array.isArray(data.condominiums)) {
+          const opts = data.condominiums.map((c: any) => ({ id: String(c.id), name: String(c.name || c.nombre || c.id) }))
+          setCondoOptions(opts)
+          if (!selectedCondominium && opts.length) {
+            // inicializar selección con el primero disponible
+            setSelectedCondominium(String(opts[0].id))
+          }
+        }
+      } catch {}
+    }
+    loadCondos()
+    return () => { cancelled = true }
+  }, [])
+
+  // cargar ingresos agregados y pagos cuando cambien filtros
+  useEffect(() => {
+    let cancelled = false
+    const run = async () => {
+      try {
+        const params = new URLSearchParams({ year: selectedYear })
+        if (selectedCondominium) params.set("condominioId", String(selectedCondominium))
+        const res = await fetch(`/api/estado-resultados?${params.toString()}`)
+        const data = await res.json()
+        if (!cancelled && data?.success) {
+          setAggregatedIncome(data.income)
+          setMetaCounts(data.meta || null)
+        }
+      } catch {
+        if (!cancelled) setAggregatedIncome(null)
+      }
       try {
         const res = await fetch("/api/pagos")
         const data = await res.json()
@@ -394,9 +420,9 @@ export default function EstadoResultadosPage() {
         if (!cancelled) setMaintenancePayments([])
       }
     }
-    load()
+    run()
     return () => { cancelled = true }
-  }, [])
+  }, [selectedYear, selectedCondominium])
   const commonAreaReservations: Array<{ status: string; paymentStatus: string; date: string; fee?: number }> = []
 
   // Memoizar los meses visibles para evitar recálculos innecesarios
@@ -447,19 +473,45 @@ export default function EstadoResultadosPage() {
 
   // Calcular ingresos por categoría basados en pagos reales
   const incomeByCategory = useMemo(() => {
+    // Si tenemos datos agregados del backend, mapearlos a los 8 meses visibles de initialFinancialData
+    if (aggregatedIncome) {
+      // initialFinancialData.months incluye meses específicos del reporte (p.ej. Mayo..Dic). Mapeamos por nombre.
+      const byNameToIndex = (name: string) => getMonthNumber(name) - 1 // 0..11
+      const mapSeries = (series12: number[]) => initialFinancialData.months.map((m) => series12[byNameToIndex(m)] || 0)
+      const series = {
+        maintenance: mapSeries(aggregatedIncome.maintenance || Array(12).fill(0)),
+        recovered: mapSeries(aggregatedIncome.recovered || Array(12).fill(0)),
+        advance: mapSeries(aggregatedIncome.advance || Array(12).fill(0)),
+        annualities: mapSeries(aggregatedIncome.annualities || Array(12).fill(0)),
+        fines: mapSeries(aggregatedIncome.fines || Array(12).fill(0)),
+        agreements: mapSeries(aggregatedIncome.agreements || Array(12).fill(0)),
+        commonAreas: mapSeries(aggregatedIncome.commonAreas || Array(12).fill(0)),
+        others: mapSeries(aggregatedIncome.others || Array(12).fill(0)),
+      }
+      // Evitar doble conteo: mostrar EITHER 'advance' OR 'annualities' según el toggle
+      if (showAnnualAsSingleMonth) {
+        series.annualities = Array(initialFinancialData.months.length).fill(0)
+      } else {
+        series.advance = Array(initialFinancialData.months.length).fill(0)
+      }
+      return series
+    }
     return calculateIncomeByCategory(maintenancePayments, commonAreaReservations, financialData.months)
-  }, [maintenancePayments, commonAreaReservations, financialData.months])
+  }, [aggregatedIncome, maintenancePayments, commonAreaReservations, financialData.months, showAnnualAsSingleMonth])
 
   // Computed financial data
   const computedFinancialData = useMemo(() => {
     const baseData = {
       ...initialFinancialData,
-      title: `REPORTE FINANCIERO ${selectedCondominium}`,
+      title: `REPORTE FINANCIERO ${(() => {
+        const found = condoOptions.find((c) => String(c.id) === String(selectedCondominium))
+        return found ? found.name : ""
+      })()}`,
       period: `ACUMULADO A DICIEMBRE ${selectedYear}`,
     }
 
     // Update income categories if we have calculated data
-    if (incomeByCategory) {
+  if (incomeByCategory) {
       // Update maintenance payments
       if (incomeByCategory.maintenance) {
         baseData.income[1].amounts = incomeByCategory.maintenance
@@ -470,6 +522,9 @@ export default function EstadoResultadosPage() {
       }
       if (incomeByCategory.advance) {
         baseData.income[4].amounts = incomeByCategory.advance
+      }
+      if ((incomeByCategory as any).annualities) {
+        baseData.income[2].amounts = (incomeByCategory as any).annualities
       }
       if (incomeByCategory.fines) {
         baseData.income[6].amounts = incomeByCategory.fines
@@ -484,6 +539,19 @@ export default function EstadoResultadosPage() {
         baseData.income[9].amounts = incomeByCategory.others
       }
 
+  // Si estamos usando datos agregados reales, poner en 0 categorías sin fuente en BD
+  // Indices: 0(Saldo Inicial), 5(Sin identificar), 10(Cuotas extraordinarias)
+      const zeroRow = (len: number) => Array(len).fill(0)
+      baseData.income[0].amounts = zeroRow(baseData.months.length)
+      baseData.income[5].amounts = zeroRow(baseData.months.length)
+      baseData.income[10].amounts = zeroRow(baseData.months.length)
+
+      // Gastos: si no hay fuente real, no inventar datos -> poner en 0 todas las filas
+      baseData.expenses = baseData.expenses.map((e) => ({
+        ...e,
+        amounts: zeroRow(baseData.months.length),
+      }))
+
       // Recalculate totals
       baseData.summary.totalIncome = baseData.months.map((_, monthIndex) => {
         let totalIncome = 0
@@ -493,6 +561,16 @@ export default function EstadoResultadosPage() {
           }
         })
         return totalIncome
+      })
+
+      // Recalcular gastos totales a partir de las filas de gastos (quedarán 0 al no tener BD)
+      baseData.summary.totalExpenses = baseData.months.map((_, monthIndex) => {
+        let total = 0
+        baseData.expenses.forEach((item) => {
+          const v = (item as any).amounts?.[monthIndex] || 0
+          total += v
+        })
+        return total
       })
 
       baseData.summary.periodBalance = baseData.months.map((_, monthIndex) => {
@@ -512,7 +590,7 @@ export default function EstadoResultadosPage() {
     }
 
     return baseData
-  }, [incomeByCategory, selectedCondominium, selectedYear])
+  }, [incomeByCategory, selectedCondominium, selectedYear, condoOptions])
 
   // Función para alternar la expansión de secciones
   const toggleSection = useCallback((section: "ingresos" | "gastos" | "saldos") => {
@@ -564,14 +642,22 @@ export default function EstadoResultadosPage() {
 
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex gap-2">
-                <Select value={selectedCondominium} onValueChange={setSelectedCondominium}>
+                <Select value={selectedCondominium || (condoOptions.length ? String(condoOptions[0].id) : "no-data")} onValueChange={setSelectedCondominium}>
                   <SelectTrigger className="w-[180px] bg-white border-gray-300">
                     <SelectValue placeholder="Condominio" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Puerta Natura C5">Puerta Natura C5</SelectItem>
-                    <SelectItem value="Residencial Las Palmas">Residencial Las Palmas</SelectItem>
-                    <SelectItem value="Arcos del Valle">Arcos del Valle</SelectItem>
+                    {condoOptions.length === 0 ? (
+                      <SelectItem value="no-data" disabled>
+                        Sin datos
+                      </SelectItem>
+                    ) : (
+                      condoOptions.map((c) => (
+                        <SelectItem key={c.id} value={String(c.id)}>
+                          {c.name}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
 
@@ -605,6 +691,15 @@ export default function EstadoResultadosPage() {
                     <SelectItem value="2025">2025</SelectItem>
                   </SelectContent>
                 </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={`ml-2 ${showAnnualAsSingleMonth ? "border-green-600 text-green-700" : ""}`}
+                  onClick={() => setShowAnnualAsSingleMonth((v) => !v)}
+                  title="Alterna cómo se muestran los pagos anuales"
+                >
+                  {showAnnualAsSingleMonth ? "Concentrar pago anual" : "Amortizar pago anual"}
+                </Button>
               </div>
 
               <div className="flex gap-2">
@@ -857,13 +952,28 @@ export default function EstadoResultadosPage() {
                                 <tr key={`ingreso-${index}`} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                                   <td className="p-3 font-medium">{item.concept}</td>
                                   <td className="p-3 text-gray-600">{item.detail}</td>
-                                  {visibleMonthIndices.map((monthIndex, i) => (
-                                    <td key={`ingreso-amt-${index}-${i}`} className="p-3 text-right">
-                                      {item.amounts[monthIndex] > 0
-                                        ? `$${formatCurrency(item.amounts[monthIndex])}`
-                                        : ""}
-                                    </td>
-                                  ))}
+                                  {visibleMonthIndices.map((monthIndex, i) => {
+                                    const val = item.amounts[monthIndex] || 0
+                                    const isAdvanceRow = item.concept === "CUOTAS ADELANTADAS"
+                                    const advCount = metaCounts?.advanceCount?.[monthIndex] || 0
+                                    const badge = isAdvanceRow && advCount >= 12
+                                      ? { text: "Anual", cls: "bg-green-100 text-green-800" }
+                                      : isAdvanceRow && advCount > 1
+                                      ? { text: `Adelanto x${advCount}`, cls: "bg-yellow-100 text-yellow-800" }
+                                      : null
+                                    return (
+                                      <td key={`ingreso-amt-${index}-${i}`} className="p-3 text-right">
+                                        <div className="flex items-center justify-end gap-2">
+                                          {val > 0 ? <span>{`$${formatCurrency(val)}`}</span> : null}
+                                          {badge ? (
+                                            <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${badge.cls}`}>
+                                              {badge.text}
+                                            </span>
+                                          ) : null}
+                                        </div>
+                                      </td>
+                                    )
+                                  })}
                                 </tr>
                               ))}
                               <tr className="bg-[#0e2c52] text-white font-semibold">
@@ -1094,311 +1204,85 @@ export default function EstadoResultadosPage() {
             </TabsContent>
 
             <TabsContent value="charts">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    {/* Gráfico de Ingresos vs Gastos */}
-                    <div className="bg-white rounded-lg shadow-sm border p-4">
-                      <h3 className="text-lg font-semibold mb-4 text-[#0e2c52]">Ingresos vs Gastos</h3>
-                      <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart
-                            data={computedFinancialData.months.map((month, index) => ({
-                              name: month,
-                              ingresos: computedFinancialData.summary.totalIncome[index],
-                              gastos: computedFinancialData.summary.totalExpenses[index],
-                            }))}
-                            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                          >
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="name" />
-                            <YAxis />
-                            <Tooltip
-                              formatter={(value: number | string) => [
-                                `$${formatCurrency(typeof value === 'number' ? value : Number(value))}`,
-                                undefined,
-                              ]}
-                              labelFormatter={(label) => `Mes: ${label}`}
-                            />
-                            <Legend />
-                            <Bar dataKey="ingresos" name="Ingresos" fill="#4CAF50" />
-                            <Bar dataKey="gastos" name="Gastos" fill="#F44336" />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-
-                    {/* Gráfico de Balance del Periodo */}
-                    <div className="bg-white rounded-lg shadow-sm border p-4">
-                      <h3 className="text-lg font-semibold mb-4 text-[#0e2c52]">Balance del Periodo</h3>
-                      <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart
-                            data={computedFinancialData.months.map((month, index) => ({
-                              name: month,
-                              balance: computedFinancialData.summary.periodBalance[index],
-                              acumulado: computedFinancialData.summary.accumulatedBalance[index],
-                            }))}
-                            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                          >
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="name" />
-                            <YAxis />
-                            <Tooltip
-                              formatter={(value: number | string) => [
-                                `$${formatCurrency(typeof value === 'number' ? value : Number(value))}`,
-                                undefined,
-                              ]}
-                              labelFormatter={(label) => `Mes: ${label}`}
-                            />
-                            <Legend />
-                            <Line
-                              type="monotone"
-                              dataKey="balance"
-                              name="Balance Mensual"
-                              stroke="#2196F3"
-                              activeDot={{ r: 8 }}
-                            />
-                            <Line
-                              type="monotone"
-                              dataKey="acumulado"
-                              name="Saldo Acumulado"
-                              stroke="#0e2c52"
-                              strokeWidth={2}
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-
-                    {/* Distribución de Ingresos */}
-                    <div className="bg-white rounded-lg shadow-sm border p-4">
-                      <h3 className="text-lg font-semibold mb-4 text-[#0e2c52]">
-                        Distribución de Ingresos (Último Mes)
-                      </h3>
-                      <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={[
-                                { name: "Cuotas Mantenimiento", value: computedFinancialData.income[1].amounts[7] },
-                                { name: "Cuotas Recuperadas", value: computedFinancialData.income[3].amounts[7] },
-                                { name: "Cuotas Adelantadas", value: computedFinancialData.income[4].amounts[7] },
-                                { name: "Multas", value: computedFinancialData.income[6].amounts[7] },
-                                { name: "Convenios", value: computedFinancialData.income[8].amounts[7] },
-                                { name: "Otros", value: computedFinancialData.income[9].amounts[7] },
-                              ].filter((item) => item.value > 0)}
-                              cx="50%"
-                              cy="50%"
-                              labelLine={true}
-                              outerRadius={80}
-                              fill="#8884d8"
-                              dataKey="value"
-                              nameKey="name"
-                              label={({ name, percent }: { name?: string; percent?: number }) =>
-                                `${name ?? ""}: ${(((percent ?? 0) * 100) | 0).toFixed(0)}%`}
-                            >
-                              {["#4CAF50", "#2196F3", "#FFC107", "#9C27B0", "#FF5722", "#607D8B"].map(
-                                (color, index) => (
-                                  <Cell key={`cell-${index}`} fill={color} />
-                                ),
-                              )}
-                            </Pie>
-                            <Tooltip
-                              formatter={(value: number | string) => [
-                                `$${formatCurrency(typeof value === 'number' ? value : Number(value))}`,
-                                undefined,
-                              ]}
-                            />
-                            <Legend />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-
-                    {/* Distribución de Gastos */}
-                    <div className="bg-white rounded-lg shadow-sm border p-4">
-                      <h3 className="text-lg font-semibold mb-4 text-[#0e2c52]">Distribución de Gastos (Último Mes)</h3>
-                      <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={[
-                                { name: "Honorarios", value: computedFinancialData.expenses[0].amounts[7] },
-                                { name: "Jardinería", value: computedFinancialData.expenses[1].amounts[7] },
-                                { name: "Alberca", value: computedFinancialData.expenses[2].amounts[7] },
-                                { name: "Seguridad", value: computedFinancialData.expenses[3].amounts[7] },
-                                { name: "Basura", value: computedFinancialData.expenses[4].amounts[7] },
-                                { name: "Electricidad", value: computedFinancialData.expenses[5].amounts[7] },
-                                {
-                                  name: "Otros",
-                                  value: computedFinancialData.expenses
-                                    .slice(6)
-                                    .reduce((sum, item) => sum + item.amounts[7], 0),
-                                },
-                              ].filter((item) => item.value > 0)}
-                              cx="50%"
-                              cy="50%"
-                              labelLine={true}
-                              outerRadius={80}
-                              fill="#8884d8"
-                              dataKey="value"
-                              nameKey="name"
-                              label={({ name, percent }: { name?: string; percent?: number }) =>
-                                `${name ?? ""}: ${(((percent ?? 0) * 100) | 0).toFixed(0)}%`}
-                            >
-                              {["#F44336", "#E91E63", "#9C27B0", "#673AB7", "#3F51B5", "#2196F3", "#607D8B"].map(
-                                (color, index) => (
-                                  <Cell key={`cell-${index}`} fill={color} />
-                                ),
-                              )}
-                            </Pie>
-                            <Tooltip
-                              formatter={(value: number | string) => [
-                                `$${formatCurrency(typeof value === 'number' ? value : Number(value))}`,
-                                undefined,
-                              ]}
-                            />
-                            <Legend />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-
-                    {/* Tendencia de Morosidad */}
-                    <div className="bg-white rounded-lg shadow-sm border p-4 col-span-1 lg:col-span-2">
-                      <h3 className="text-lg font-semibold mb-4 text-[#0e2c52]">
-                        Tendencia de Morosidad y Cuotas Ingresadas
-                      </h3>
-                      <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart
-                            data={computedFinancialData.months.map((month, index) => ({
-                              name: month,
-                              morosidad: computedFinancialData.morosityByMonth[index],
-                              cuotasIngresadas: computedFinancialData.quotasByMonth[index],
-                            }))}
-                            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                          >
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="name" />
-                            <YAxis yAxisId="left" orientation="left" />
-                            <YAxis yAxisId="right" orientation="right" domain={[0, 100]} />
-                            <Tooltip />
-                            <Legend />
-                            <Line
-                              yAxisId="left"
-                              type="monotone"
-                              dataKey="morosidad"
-                              name="Morosidad"
-                              stroke="#F44336"
-                              activeDot={{ r: 8 }}
-                            />
-                            <Line
-                              yAxisId="right"
-                              type="monotone"
-                              dataKey="cuotasIngresadas"
-                              name="Cuotas Ingresadas"
-                              stroke="#4CAF50"
-                              strokeWidth={2}
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <ChartsSection computedFinancialData={computedFinancialData} formatCurrency={(v) => formatCurrency(v)} />
             </TabsContent>
 
             <TabsContent value="summary">
               <Card>
                 <CardContent className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div className="bg-white rounded-lg shadow-sm border p-4">
-                      <h4 className="font-bold text-lg mb-3 text-[#0e2c52]">Resumen de Ingresos</h4>
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span>Cuotas de mantenimiento:</span>
-                          <span className="font-semibold">${formatCurrency(81695.0)}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span>Cuotas recuperadas:</span>
-                          <span className="font-semibold">${formatCurrency(150.0)}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span>Cuotas adelantadas:</span>
-                          <span className="font-semibold">${formatCurrency(2858.5)}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span>Eventos y otros:</span>
-                          <span className="font-semibold">${formatCurrency(2890.0)}</span>
-                        </div>
-                        <div className="border-t pt-2 mt-2">
-                          <div className="flex justify-between items-center">
-                            <span className="font-bold">Total:</span>
-                            <span className="font-bold text-green-600">${formatCurrency(88493.5)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                  {(() => {
+                    const lastVisibleIdx = (visibleMonthIndices && visibleMonthIndices.length
+                      ? visibleMonthIndices[visibleMonthIndices.length - 1]
+                      : computedFinancialData.months.length - 1)
 
-                    <div className="bg-white rounded-lg shadow-sm border p-4">
-                      <h4 className="font-bold text-lg mb-3 text-[#0e2c52]">Resumen de Gastos</h4>
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span>Servicios:</span>
-                          <span className="font-semibold">${formatCurrency(31700.0)}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span>Mantenimiento:</span>
-                          <span className="font-semibold">${formatCurrency(1200.0)}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span>Servicios públicos:</span>
-                          <span className="font-semibold">${formatCurrency(5100.0)}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span>Otros gastos:</span>
-                          <span className="font-semibold">${formatCurrency(42702.28)}</span>
-                        </div>
-                        <div className="border-t pt-2 mt-2">
-                          <div className="flex justify-between items-center">
-                            <span className="font-bold">Total:</span>
-                            <span className="font-bold text-red-600">${formatCurrency(80702.28)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    const getIncomeAmount = (concept: string, monthIndex: number) => {
+                      const row = computedFinancialData.income.find((i: any) => i.concept === concept)
+                      return row ? (row.amounts?.[monthIndex] || 0) : 0
+                    }
 
-                    <div className="bg-white rounded-lg shadow-sm border p-4">
-                      <h4 className="font-bold text-lg mb-3 text-[#0e2c52]">Indicadores Financieros</h4>
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span>Morosidad:</span>
-                          <span className="font-semibold">3%</span>
+                    const maintenanceAmt = getIncomeAmount("CUOTAS DE MANTENIMIENTO INGRESADAS", lastVisibleIdx)
+                    const recoveredAmt = getIncomeAmount("CUOTAS RECUPERADAS MES ANTERIOR", lastVisibleIdx)
+                    const advanceAmt = getIncomeAmount("CUOTAS ADELANTADAS", lastVisibleIdx)
+                    const finesAmt = getIncomeAmount("MULTAS", lastVisibleIdx)
+                    const agreementsAmt = getIncomeAmount("CONVENIOS CON MOROSOS", lastVisibleIdx)
+                    const commonAreasAmt = getIncomeAmount("EVENTOS EN ÁREAS", lastVisibleIdx)
+                    const othersAmt = getIncomeAmount("OTROS INGRESOS", lastVisibleIdx)
+
+                    const totalIncome = computedFinancialData.summary.totalIncome[lastVisibleIdx] || 0
+                    const totalExpenses = computedFinancialData.summary.totalExpenses[lastVisibleIdx] || 0
+                    const periodBalance = computedFinancialData.summary.periodBalance[lastVisibleIdx] || 0
+                    const accumulated = computedFinancialData.summary.accumulatedBalance[lastVisibleIdx] || 0
+                    const margin = totalIncome > 0 ? (periodBalance / totalIncome) * 100 : null
+                    const healthy = periodBalance >= 0
+
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="bg-white rounded-lg shadow-sm border p-4">
+                          <h4 className="font-bold text-lg mb-3 text-[#0e2c52]">Resumen de Ingresos (mes)</h4>
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center"><span>Cuotas de mantenimiento:</span><span className="font-semibold">${formatCurrency(maintenanceAmt)}</span></div>
+                            <div className="flex justify-between items-center"><span>Cuotas recuperadas:</span><span className="font-semibold">${formatCurrency(recoveredAmt)}</span></div>
+                            <div className="flex justify-between items-center"><span>Cuotas adelantadas:</span><span className="font-semibold">${formatCurrency(advanceAmt)}</span></div>
+                            <div className="flex justify-between items-center"><span>Multas:</span><span className="font-semibold">${formatCurrency(finesAmt)}</span></div>
+                            <div className="flex justify-between items-center"><span>Convenios:</span><span className="font-semibold">${formatCurrency(agreementsAmt)}</span></div>
+                            <div className="flex justify-between items-center"><span>Áreas comunes:</span><span className="font-semibold">${formatCurrency(commonAreasAmt)}</span></div>
+                            <div className="flex justify-between items-center"><span>Otros ingresos:</span><span className="font-semibold">${formatCurrency(othersAmt)}</span></div>
+                            <div className="border-t pt-2 mt-2">
+                              <div className="flex justify-between items-center">
+                                <span className="font-bold">Total ingresos:</span>
+                                <span className="font-bold text-green-600">${formatCurrency(totalIncome)}</span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span>Eficiencia en cobro:</span>
-                          <span className="font-semibold">96%</span>
+
+                        <div className="bg-white rounded-lg shadow-sm border p-4">
+                          <h4 className="font-bold text-lg mb-3 text-[#0e2c52]">Resumen de Gastos (mes)</h4>
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span>Total gastos:</span>
+                              <span className="font-bold text-red-600">${formatCurrency(totalExpenses)}</span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span>Margen operativo:</span>
-                          <span className="font-semibold">8.8%</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span>Reserva acumulada:</span>
-                          <span className="font-semibold">${formatCurrency(25275.94)}</span>
-                        </div>
-                        <div className="border-t pt-2 mt-2">
-                          <div className="flex justify-between items-center">
-                            <span className="font-bold">Estado:</span>
-                            <span className="font-bold text-green-600">Saludable</span>
+
+                        <div className="bg-white rounded-lg shadow-sm border p-4">
+                          <h4 className="font-bold text-lg mb-3 text-[#0e2c52]">Indicadores Financieros (mes)</h4>
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center"><span>Balance del periodo:</span><span className={`font-semibold ${healthy ? "text-green-600" : "text-red-600"}`}>${formatCurrency(periodBalance)}</span></div>
+                            <div className="flex justify-between items-center"><span>Margen operativo:</span><span className="font-semibold">{margin === null ? "N/D" : `${margin.toFixed(1)}%`}</span></div>
+                            <div className="flex justify-between items-center"><span>Reserva acumulada:</span><span className="font-semibold">${formatCurrency(accumulated)}</span></div>
+                            <div className="border-t pt-2 mt-2">
+                              <div className="flex justify-between items-center">
+                                <span className="font-bold">Estado:</span>
+                                <span className={`font-bold ${healthy ? "text-green-600" : "text-red-600"}`}>{healthy ? "Saludable" : "Déficit"}</span>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
+                    )
+                  })()}
                 </CardContent>
               </Card>
             </TabsContent>

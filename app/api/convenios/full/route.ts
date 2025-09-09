@@ -86,30 +86,28 @@ export async function POST(req: Request) {
       ? (now.getFullYear() - startDate.getFullYear()) * 12 + (now.getMonth() - startDate.getMonth()) + 1
       : 0
 
-    // 4) Traer pagos de mantenimiento pagados y pendientes/atrasados de la propiedad
-    const [paidRows]: any = await conn.execute(
-      `SELECT id, periodo_mes AS mes, periodo_anio AS anio FROM pagos_mantenimiento WHERE propiedad_id = ? AND estado = 'pagado'`,
-      [propiedadId],
-    )
-    const [pendRows]: any = await conn.execute(
-      `SELECT id, periodo_mes AS mes, periodo_anio AS anio, monto
+    // 4) Traer pagos existentes (cualquier estado) y también listas específicas
+    const [allRows]: any = await conn.execute(
+      `SELECT id, periodo_mes AS mes, periodo_anio AS anio, estado, monto
        FROM pagos_mantenimiento
-       WHERE propiedad_id = ? AND estado IN ('pendiente','atrasado')
-       ORDER BY periodo_anio ASC, periodo_mes ASC`,
+       WHERE propiedad_id = ?`,
       [propiedadId],
     )
+    const paidSet = new Set<string>(allRows.filter((r: any) => r.estado === 'pagado').map((r: any) => `${r.anio}-${r.mes}`))
+    const existingSet = new Set<string>(allRows.map((r: any) => `${r.anio}-${r.mes}`))
+    const pendList: Array<{ id: number; mes: number; anio: number; monto: number }> = (allRows as any[])
+      .filter((r: any) => r.estado === 'pendiente' || r.estado === 'atrasado')
+      .sort((a: any, b: any) => (a.anio - b.anio) || (a.mes - b.mes))
 
-    const paidSet = new Set<string>(paidRows.map((r: any) => `${r.anio}-${r.mes}`))
-    const pendList: Array<{ id: number; mes: number; anio: number; monto: number }> = Array.isArray(pendRows) ? pendRows : []
-
-    // 5) Construir periodos faltantes (no pagados ni pendientes) desde startDate hasta hoy
+  // 5) Construir periodos faltantes (no existentes en absoluto) desde startDate hasta hoy
     const missing: Array<{ mes: number; anio: number }> = []
     if (expectedMonths > 0 && startDate) {
       for (let i = 0; i < expectedMonths; i++) {
         const d = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1)
         const y = d.getFullYear(), m = d.getMonth() + 1
         const key = `${y}-${m}`
-        if (!paidSet.has(key) && !pendList.find((p) => p.anio === y && p.mes === m)) {
+    // Si ya existe cualquier registro para ese periodo (pagado/pendiente/atrasado/cancelado), NO lo recreamos
+    if (!existingSet.has(key)) {
           missing.push({ anio: y, mes: m })
         }
       }
@@ -131,16 +129,30 @@ export async function POST(req: Request) {
         [ ("\nIncluido en convenio de pago"), r.id ],
       )
     }
-    // Crear faltantes como 'cancelado' con cuotaMonto
+    // Crear faltantes como 'cancelado' con cuotaMonto, evitando duplicados si aparecieron en medio
     for (const r of toCreate) {
       const d = cuotaDiaGracia && cuotaDiaGracia > 0 && cuotaDiaGracia <= 28 ? new Date(r.anio, r.mes - 1, cuotaDiaGracia) : null
       const fechaV = d ? d.toISOString().slice(0, 10) : null
       baseSum += Number(cuotaMonto || 0)
-      await conn.execute(
-        `INSERT INTO pagos_mantenimiento (propiedad_id, cuota_id, periodo_mes, periodo_anio, monto, fecha_vencimiento, estado)
-         VALUES (?, ?, ?, ?, ?, ?, 'cancelado')`,
-        [propiedadId, cuotaId, r.mes, r.anio, Number(cuotaMonto || 0), fechaV],
+      // Salvaguarda: si ya existe un registro (por carrera o por estado diferente), intentamos actualizar si no es 'pagado'; si no existe, insertamos
+      const [existCheck]: any = await conn.execute(
+        `SELECT id, estado FROM pagos_mantenimiento WHERE propiedad_id = ? AND periodo_mes = ? AND periodo_anio = ? LIMIT 1`,
+        [propiedadId, r.mes, r.anio],
       )
+      if (Array.isArray(existCheck) && existCheck.length) {
+        if (existCheck[0].estado !== 'pagado') {
+          await conn.execute(
+            `UPDATE pagos_mantenimiento SET estado = 'cancelado', cuota_id = ?, monto = ?, fecha_vencimiento = ? WHERE id = ?`,
+            [cuotaId, Number(cuotaMonto || 0), fechaV, existCheck[0].id],
+          )
+        }
+      } else {
+        await conn.execute(
+          `INSERT INTO pagos_mantenimiento (propiedad_id, cuota_id, periodo_mes, periodo_anio, monto, fecha_vencimiento, estado)
+           VALUES (?, ?, ?, ?, ?, ?, 'cancelado')`,
+          [propiedadId, cuotaId, r.mes, r.anio, Number(cuotaMonto || 0), fechaV],
+        )
+      }
     }
 
     // 8) Determinar cuotas (personalizadas o divididas) y total del convenio

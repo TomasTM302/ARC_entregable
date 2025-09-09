@@ -185,7 +185,7 @@ export async function PATCH(req: Request) {
     const setCols = ["estado = ?"]
     const setVals: any[] = [estado]
     // Verificar si existe la columna fecha_pago antes de usarla
-    if (estado === "pagada") {
+  if (estado === "pagada") {
       if (typeof HAS_PAID_COL === "undefined") {
         try {
           const dbName = process.env.DB_NAME
@@ -198,7 +198,7 @@ export async function PATCH(req: Request) {
           HAS_PAID_COL = false
         }
       }
-      if (HAS_PAID_COL) { setCols.push("fecha_pago = ?"); setVals.push(now) }
+  if (HAS_PAID_COL) { setCols.push("fecha_pago = COALESCE(fecha_pago, ?)"); setVals.push(now) }
     }
     if (pagoId != null) { setCols.push("pago_id = ?"); setVals.push(pagoId) }
     if (notas != null) { setCols.push("notas = ?"); setVals.push(notas) }

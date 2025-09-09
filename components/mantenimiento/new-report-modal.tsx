@@ -157,8 +157,8 @@ export default function NewReportModal({ isOpen, onClose, preselectedCondominium
     const condominioId = selectedCondo?.id || ""
     if (!title.trim() || !description.trim() || !user || !section || !condominioId) return
     setIsSubmitting(true)
-    // Solo guardar la primera imagen como evidencia_url
-    const evidenciaUrl = images.length > 0 ? images[0] : ""
+  // Enviar todas las imágenes como evidencias (data URLs); el backend subirá a Drive y guardará CSV
+  const evidenceUrls = images && images.length ? images : []
     // Estado en español
     const estado = "pendiente"
     // POST a /api/personal_mantenimiento/tareas
@@ -170,7 +170,7 @@ export default function NewReportModal({ isOpen, onClose, preselectedCondominium
           condominiumId: condominioId,
           sectionId: areaComunId,
           status: "completed",
-          evidenceUrl: evidenciaUrl,
+          evidenceUrls,
           notes,
         }
     try {

@@ -16,11 +16,13 @@ export async function GET(req: Request) {
       const start = new Date(date)
       const end = new Date(start)
       end.setDate(end.getDate() + 1)
-      sql += ' WHERE scanned_at >= ? AND scanned_at < ?'
+      // Filtramos por la fecha real de entrada
+      sql += ' WHERE fecha_entrada >= ? AND fecha_entrada < ?'
       params.push(start, end)
     }
 
-    sql += ' ORDER BY scanned_at DESC LIMIT 100'
+    // Ordenamos por la fecha real de entrada (descendente)
+    sql += ' ORDER BY fecha_entrada DESC, id DESC LIMIT 100'
 
     const [rows] = (await pool.execute(sql, params)) as any[]
     return NextResponse.json({ success: true, data: rows })
