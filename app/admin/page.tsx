@@ -3,6 +3,7 @@
 import Link from "next/link"
 import {
   ArrowLeft,
+  ArrowRight,
   Users,
   Bell,
   Home,
@@ -87,9 +88,9 @@ export default function AdminPanelPage() {
                   </div>
                   <p className="text-gray-600">Gestiona los usuarios del residencial</p>
                 </div>
-                <div className="flex items-center">
-                  <span className="text-2xl font-bold text-gray-800">24</span>
-                  <span className="ml-2 text-sm text-gray-500">usuarios registrados</span>
+                <div className="mt-6 flex items-center justify-between text-sm font-medium text-[#0e2c52]">
+                  <span>Gestionar usuarios</span>
+                  <ArrowRight aria-hidden="true" className="h-4 w-4" />
                 </div>
               </div>
             </Link>
@@ -106,9 +107,9 @@ export default function AdminPanelPage() {
                   </div>
                   <p className="text-gray-600">Gestiona los convenios de pago</p>
                 </div>
-                <div className="flex items-center">
-                  <span className="text-2xl font-bold text-gray-800">5</span>
-                  <span className="ml-2 text-sm text-gray-500">convenios activos</span>
+                <div className="mt-6 flex items-center justify-between text-sm font-medium text-[#0e2c52]">
+                  <span>Revisar convenios</span>
+                  <ArrowRight aria-hidden="true" className="h-4 w-4" />
                 </div>
               </div>
             </Link>
@@ -125,9 +126,9 @@ export default function AdminPanelPage() {
                   </div>
                   <p className="text-gray-600">Gestiona las multas a residentes</p>
                 </div>
-                <div className="flex items-center">
-                  <span className="text-2xl font-bold text-gray-800">8</span>
-                  <span className="ml-2 text-sm text-gray-500">multas pendientes</span>
+                <div className="mt-6 flex items-center justify-between text-sm font-medium text-[#0e2c52]">
+                  <span>Ver multas recientes</span>
+                  <ArrowRight aria-hidden="true" className="h-4 w-4" />
                 </div>
               </div>
             </Link>
@@ -144,9 +145,16 @@ export default function AdminPanelPage() {
                   </div>
                   <p className="text-gray-600">Gestiona la cuota mensual de mantenimiento</p>
                 </div>
-                <div className="flex items-center">
-                  <span className="text-2xl font-bold text-gray-800">${maintenancePrice.toLocaleString()}</span>
-                  <span className="ml-2 text-sm text-gray-500">cuota actual</span>
+                <div className="mt-6">
+                  {maintenancePrice > 0 ? (
+                    <p className="text-base font-semibold text-gray-800">
+                      Cuota vigente: ${maintenancePrice.toLocaleString()}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-500">
+                      Configura la cuota mensual desde el módulo de mantenimiento.
+                    </p>
+                  )}
                 </div>
               </div>
             </Link>
@@ -163,9 +171,9 @@ export default function AdminPanelPage() {
                   </div>
                   <p className="text-gray-600">Gestiona los avisos del residencial</p>
                 </div>
-                <div className="flex items-center">
-                  <span className="text-2xl font-bold text-gray-800">8</span>
-                  <span className="ml-2 text-sm text-gray-500">avisos activos</span>
+                <div className="mt-6 flex items-center justify-between text-sm font-medium text-[#0e2c52]">
+                  <span>Administrar avisos</span>
+                  <ArrowRight aria-hidden="true" className="h-4 w-4" />
                 </div>
               </div>
             </Link>
@@ -182,9 +190,9 @@ export default function AdminPanelPage() {
                   </div>
                   <p className="text-gray-600">Gestiona las áreas comunes y sus reservas</p>
                 </div>
-                <div className="flex items-center">
-                  <span className="text-2xl font-bold text-gray-800">5</span>
-                  <span className="ml-2 text-sm text-gray-500">áreas disponibles</span>
+                <div className="mt-6 flex items-center justify-between text-sm font-medium text-[#0e2c52]">
+                  <span>Gestionar reservas</span>
+                  <ArrowRight aria-hidden="true" className="h-4 w-4" />
                 </div>
               </div>
             </Link>
@@ -201,9 +209,9 @@ export default function AdminPanelPage() {
                   </div>
                   <p className="text-gray-600">Gestiona los pagos de mantenimiento</p>
                 </div>
-                <div className="flex items-center">
-                  <span className="text-2xl font-bold text-gray-800">$45,250</span>
-                  <span className="ml-2 text-sm text-gray-500">recaudados este mes</span>
+                <div className="mt-6 flex items-center justify-between text-sm font-medium text-[#0e2c52]">
+                  <span>Revisar pagos recibidos</span>
+                  <ArrowRight aria-hidden="true" className="h-4 w-4" />
                 </div>
               </div>
             </Link>
@@ -222,9 +230,9 @@ export default function AdminPanelPage() {
                   </div>
                   <p className="text-gray-600">Gestiona los comercios cercanos al residencial</p>
                 </div>
-                <div className="flex items-center">
-                  <span className="text-2xl font-bold text-gray-800">{businessCount}</span>
-                  <span className="ml-2 text-sm text-gray-500">comercios registrados</span>
+                <div className="mt-6 flex items-center justify-between text-sm font-medium text-[#0e2c52]">
+                  <span>{businessCount > 0 ? `${businessCount} comercio${businessCount === 1 ? "" : "s"}` : "Sin comercios aún"}</span>
+                  <ArrowRight aria-hidden="true" className="h-4 w-4" />
                 </div>
               </div>
             </Link>
@@ -241,9 +249,9 @@ export default function AdminPanelPage() {
                   </div>
                   <p className="text-gray-600">Gestiona las tareas administrativas</p>
                 </div>
-                <div className="flex items-center">
-                  <span className="text-2xl font-bold text-gray-800">15</span>
-                  <span className="ml-2 text-sm text-gray-500">tareas pendientes</span>
+                <div className="mt-6 flex items-center justify-between text-sm font-medium text-[#0e2c52]">
+                  <span>Organizar pendientes</span>
+                  <ArrowRight aria-hidden="true" className="h-4 w-4" />
                 </div>
               </div>
             </Link>
@@ -262,9 +270,9 @@ export default function AdminPanelPage() {
                   </div>
                   <p className="text-gray-600">Consulta los reportes financieros del residencial</p>
                 </div>
-                <div className="flex items-center">
-                  <span className="text-2xl font-bold text-gray-800">$102,407</span>
-                  <span className="ml-2 text-sm text-gray-500">balance actual</span>
+                <div className="mt-6 flex items-center justify-between text-sm font-medium text-[#0e2c52]">
+                  <span>Explorar reporte financiero</span>
+                  <ArrowRight aria-hidden="true" className="h-4 w-4" />
                 </div>
               </div>
             </Link>
