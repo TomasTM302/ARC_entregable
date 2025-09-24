@@ -637,13 +637,13 @@ export default function EstadoResultadosPage() {
         </header>
 
         <div className="container mx-auto max-w-7xl py-6 px-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 print:hidden">
-            <h1 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0">Estado de Resultados</h1>
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 print:hidden">
+            <h1 className="text-3xl font-semibold text-[#0e2c52]">Estado de Resultados</h1>
 
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-4 md:items-center">
+              <div className="flex flex-wrap items-center gap-2 rounded-xl bg-white/90 p-3 shadow-md ring-1 ring-[#0e2c52]/15">
                 <Select value={selectedCondominium || (condoOptions.length ? String(condoOptions[0].id) : "no-data")} onValueChange={setSelectedCondominium}>
-                  <SelectTrigger className="w-[180px] bg-white border-gray-300">
+                  <SelectTrigger className="w-[180px] border-[#0e2c52]/30 bg-[#f8fafc] text-[#0e2c52] shadow-sm focus:ring-[#0e2c52]">
                     <SelectValue placeholder="Condominio" />
                   </SelectTrigger>
                   <SelectContent>
@@ -662,7 +662,7 @@ export default function EstadoResultadosPage() {
                 </Select>
 
                 <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                  <SelectTrigger className="w-[120px] bg-white border-gray-300">
+                  <SelectTrigger className="w-[120px] border-[#0e2c52]/30 bg-[#f8fafc] text-[#0e2c52] shadow-sm focus:ring-[#0e2c52]">
                     <SelectValue placeholder="Mes" />
                   </SelectTrigger>
                   <SelectContent>
@@ -682,7 +682,7 @@ export default function EstadoResultadosPage() {
                 </Select>
 
                 <Select value={selectedYear} onValueChange={setSelectedYear}>
-                  <SelectTrigger className="w-[100px] bg-white border-gray-300">
+                  <SelectTrigger className="w-[100px] border-[#0e2c52]/30 bg-[#f8fafc] text-[#0e2c52] shadow-sm focus:ring-[#0e2c52]">
                     <SelectValue placeholder="Año" />
                   </SelectTrigger>
                   <SelectContent>
@@ -694,7 +694,7 @@ export default function EstadoResultadosPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className={`ml-2 ${showAnnualAsSingleMonth ? "border-green-600 text-green-700" : ""}`}
+                  className={`ml-2 border-[#0e2c52] text-[#0e2c52] shadow-sm transition-colors hover:bg-[#0e2c52]/10 ${showAnnualAsSingleMonth ? "bg-[#0e2c52]/10" : ""}`}
                   onClick={() => setShowAnnualAsSingleMonth((v) => !v)}
                   title="Alterna cómo se muestran los pagos anuales"
                 >
@@ -702,12 +702,12 @@ export default function EstadoResultadosPage() {
                 </Button>
               </div>
 
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={handlePrint} className="flex items-center gap-2">
+              <div className="flex gap-2 rounded-xl bg-white/90 p-3 shadow-md ring-1 ring-[#0e2c52]/15">
+                <Button variant="outline" onClick={handlePrint} className="flex items-center gap-2 border-[#0e2c52] text-[#0e2c52] hover:bg-[#0e2c52]/10">
                   <Printer className="h-4 w-4" />
                   Imprimir
                 </Button>
-                <Button variant="outline" onClick={handleDownloadExcel} className="flex items-center gap-2">
+                <Button variant="outline" onClick={handleDownloadExcel} className="flex items-center gap-2 border-[#0e2c52] text-[#0e2c52] hover:bg-[#0e2c52]/10">
                   <FileSpreadsheet className="h-4 w-4" />
                   Excel
                 </Button>
@@ -721,20 +721,24 @@ export default function EstadoResultadosPage() {
 
           {/* Añadir después del div con className="flex flex-col md:flex-row md:items-center justify-between mb-6 print:hidden" */}
           <div className="mb-4 flex justify-end print:hidden">
-            <Button onClick={() => setShowAllMonths(!showAllMonths)} variant="outline" className="mb-4">
+            <Button
+              onClick={() => setShowAllMonths(!showAllMonths)}
+              variant="outline"
+              className="mb-4 border-[#0e2c52] text-[#0e2c52] shadow-sm hover:bg-[#0e2c52]/10"
+            >
               {showAllMonths ? "Mostrar mes seleccionado y 3 anteriores" : "Mostrar todos los meses"}
             </Button>
           </div>
 
           <Tabs defaultValue="table" className="print:hidden">
-            <TabsList className="mb-4">
+            <TabsList className="mb-4 bg-white/60 p-1 shadow-sm ring-1 ring-[#0e2c52]/10">
               <TabsTrigger value="table">Tabla</TabsTrigger>
               <TabsTrigger value="charts">Gráficos</TabsTrigger>
               <TabsTrigger value="summary">Resumen</TabsTrigger>
             </TabsList>
 
             <TabsContent value="table">
-              <Card>
+              <Card className="border-[#0e2c52]/10 bg-white/95 shadow-lg">
                 <CardContent className="p-6">
                   <div className="financial-report">
                     {/* Encabezado del reporte */}
@@ -746,8 +750,9 @@ export default function EstadoResultadosPage() {
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                       {/* Columna 1: Información general */}
-                      <div className="bg-white rounded-lg shadow-sm border p-4">
+                      <div className="rounded-2xl border border-[#0e2c52]/10 bg-gradient-to-br from-white to-[#eaf1fb] p-4 shadow-sm">
                         <div className="flex justify-center mb-4">
+                          <div className="rounded-xl bg-[#0e2c52] px-6 py-3 shadow-md">
                           <Image
                             src="/images/arcos-logo.png"
                             alt="ARC Residential Management"
@@ -755,6 +760,7 @@ export default function EstadoResultadosPage() {
                             height={120}
                             className="object-contain"
                           />
+                          </div>
                         </div>
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
@@ -780,7 +786,7 @@ export default function EstadoResultadosPage() {
                       </div>
 
                       {/* Columna 2: Resumen de ingresos y gastos */}
-                      <div className="bg-white rounded-lg shadow-sm border p-4">
+                      <div className="rounded-2xl border border-[#0e2c52]/10 bg-gradient-to-br from-white to-[#eaf1fb] p-4 shadow-sm">
                         <h4 className="font-bold text-lg mb-3 text-[#0e2c52]">Resumen Financiero</h4>
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
@@ -824,7 +830,7 @@ export default function EstadoResultadosPage() {
                       </div>
 
                       {/* Columna 3: Información bancaria */}
-                      <div className="bg-white rounded-lg shadow-sm border p-4">
+                      <div className="rounded-2xl border border-[#0e2c52]/10 bg-gradient-to-br from-white to-[#eaf1fb] p-4 shadow-sm">
                         <h4 className="font-bold text-lg mb-3 text-[#0e2c52]">Información Bancaria</h4>
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
@@ -1096,8 +1102,8 @@ export default function EstadoResultadosPage() {
 
                     {/* Información bancaria y cuentas */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-                      <div className="bg-white rounded-lg shadow-sm border">
-                        <h4 className="font-bold text-lg p-3 bg-[#0e2c52] text-white rounded-t-lg">
+                      <div className="overflow-hidden rounded-2xl border border-[#0e2c52]/15 bg-white/95 shadow-lg">
+                        <h4 className="font-bold text-lg p-3 bg-[#0e2c52] text-white">
                           Información Bancaria
                         </h4>
                         <table className="w-full border-collapse">
@@ -1148,8 +1154,8 @@ export default function EstadoResultadosPage() {
                         </table>
                       </div>
 
-                      <div className="bg-white rounded-lg shadow-sm border">
-                        <h4 className="font-bold text-lg p-3 bg-[#0e2c52] text-white rounded-t-lg">
+                      <div className="overflow-hidden rounded-2xl border border-[#0e2c52]/15 bg-white/95 shadow-lg">
+                        <h4 className="font-bold text-lg p-3 bg-[#0e2c52] text-white">
                           Información de Cuentas
                         </h4>
                         <table className="w-full border-collapse">
@@ -1208,7 +1214,7 @@ export default function EstadoResultadosPage() {
             </TabsContent>
 
             <TabsContent value="summary">
-              <Card>
+              <Card className="border-[#0e2c52]/10 bg-white/95 shadow-lg">
                 <CardContent className="p-6">
                   {(() => {
                     const lastVisibleIdx = (visibleMonthIndices && visibleMonthIndices.length
@@ -1237,7 +1243,7 @@ export default function EstadoResultadosPage() {
 
                     return (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div className="bg-white rounded-lg shadow-sm border p-4">
+                        <div className="rounded-2xl border border-[#0e2c52]/10 bg-gradient-to-br from-white to-[#eaf1fb] p-4 shadow-sm">
                           <h4 className="font-bold text-lg mb-3 text-[#0e2c52]">Resumen de Ingresos (mes)</h4>
                           <div className="space-y-2">
                             <div className="flex justify-between items-center"><span>Cuotas de mantenimiento:</span><span className="font-semibold">${formatCurrency(maintenanceAmt)}</span></div>
@@ -1256,7 +1262,7 @@ export default function EstadoResultadosPage() {
                           </div>
                         </div>
 
-                        <div className="bg-white rounded-lg shadow-sm border p-4">
+                        <div className="rounded-2xl border border-[#0e2c52]/10 bg-gradient-to-br from-white to-[#eaf1fb] p-4 shadow-sm">
                           <h4 className="font-bold text-lg mb-3 text-[#0e2c52]">Resumen de Gastos (mes)</h4>
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
@@ -1266,7 +1272,7 @@ export default function EstadoResultadosPage() {
                           </div>
                         </div>
 
-                        <div className="bg-white rounded-lg shadow-sm border p-4">
+                        <div className="rounded-2xl border border-[#0e2c52]/10 bg-gradient-to-br from-white to-[#eaf1fb] p-4 shadow-sm">
                           <h4 className="font-bold text-lg mb-3 text-[#0e2c52]">Indicadores Financieros (mes)</h4>
                           <div className="space-y-2">
                             <div className="flex justify-between items-center"><span>Balance del periodo:</span><span className={`font-semibold ${healthy ? "text-green-600" : "text-red-600"}`}>${formatCurrency(periodBalance)}</span></div>
