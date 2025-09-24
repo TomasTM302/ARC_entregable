@@ -14,6 +14,7 @@ import dynamic from "next/dynamic"
 import type { MaintenancePayment } from "@/lib/types"
 const ChartsSection = dynamic(() => import("@/components/admin/estado-resultados/ChartsSection"), { ssr: false })
 import { useEffect } from "react"
+import { cn } from "@/lib/utils"
 
 // Array de nombres de meses
 const MONTH_NAMES = [
@@ -641,7 +642,7 @@ export default function EstadoResultadosPage() {
             <h1 className="text-3xl font-semibold text-[#0e2c52]">Estado de Resultados</h1>
 
             <div className="flex flex-col sm:flex-row gap-4 md:items-center">
-              <div className="flex flex-wrap items-center gap-2 rounded-xl bg-white/90 p-3 shadow-md ring-1 ring-[#0e2c52]/15">
+              <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-white/90 p-3 shadow-md ring-1 ring-[#0e2c52]/15">
                 <Select value={selectedCondominium || (condoOptions.length ? String(condoOptions[0].id) : "no-data")} onValueChange={setSelectedCondominium}>
                   <SelectTrigger className="w-[180px] border-[#0e2c52]/30 bg-[#f8fafc] text-[#0e2c52] shadow-sm focus:ring-[#0e2c52]">
                     <SelectValue placeholder="Condominio" />
@@ -694,7 +695,11 @@ export default function EstadoResultadosPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className={`ml-2 border-[#0e2c52] text-[#0e2c52] shadow-sm transition-colors hover:bg-[#0e2c52]/10 ${showAnnualAsSingleMonth ? "bg-[#0e2c52]/10" : ""}`}
+                  className={cn(
+                    "rounded-full border border-[#0e2c52]/25 bg-white px-5 py-2 text-sm font-semibold text-[#0e2c52] shadow-sm transition-colors hover:border-[#0a2240]/40 hover:bg-[#0e2c52]/10 hover:text-[#0a2240] focus-visible:ring-[#0e2c52]",
+                    showAnnualAsSingleMonth &&
+                      "border-transparent bg-[#0e2c52] text-white shadow-md hover:bg-[#0a2240] hover:text-white",
+                  )}
                   onClick={() => setShowAnnualAsSingleMonth((v) => !v)}
                   title="Alterna cómo se muestran los pagos anuales"
                 >
@@ -702,16 +707,27 @@ export default function EstadoResultadosPage() {
                 </Button>
               </div>
 
-              <div className="flex gap-2 rounded-xl bg-white/90 p-3 shadow-md ring-1 ring-[#0e2c52]/15">
-                <Button variant="outline" onClick={handlePrint} className="flex items-center gap-2 border-[#0e2c52] text-[#0e2c52] hover:bg-[#0e2c52]/10">
+              <div className="flex gap-2 rounded-2xl border border-[#0e2c52]/15 bg-white/95 p-1 shadow-md">
+                <Button
+                  variant="outline"
+                  onClick={handlePrint}
+                  className="flex items-center gap-2 rounded-xl border-transparent px-4 py-2 text-sm font-semibold text-[#0e2c52] shadow-none transition-colors hover:bg-[#0e2c52]/10 hover:text-[#0a2240] focus-visible:ring-[#0e2c52]"
+                >
                   <Printer className="h-4 w-4" />
                   Imprimir
                 </Button>
-                <Button variant="outline" onClick={handleDownloadExcel} className="flex items-center gap-2 border-[#0e2c52] text-[#0e2c52] hover:bg-[#0e2c52]/10">
+                <Button
+                  variant="outline"
+                  onClick={handleDownloadExcel}
+                  className="flex items-center gap-2 rounded-xl border-transparent px-4 py-2 text-sm font-semibold text-[#0e2c52] shadow-none transition-colors hover:bg-[#0e2c52]/10 hover:text-[#0a2240] focus-visible:ring-[#0e2c52]"
+                >
                   <FileSpreadsheet className="h-4 w-4" />
                   Excel
                 </Button>
-                <Button onClick={handleDownloadPDF} className="flex items-center gap-2 bg-[#0e2c52] hover:bg-[#0a2240]">
+                <Button
+                  onClick={handleDownloadPDF}
+                  className="flex items-center gap-2 rounded-xl bg-[#0e2c52] px-5 py-2 text-sm font-semibold shadow-md hover:bg-[#0a2240] focus-visible:ring-[#0e2c52]"
+                >
                   <Download className="h-4 w-4" />
                   PDF
                 </Button>
@@ -724,7 +740,7 @@ export default function EstadoResultadosPage() {
             <Button
               onClick={() => setShowAllMonths(!showAllMonths)}
               variant="outline"
-              className="mb-4 border-[#0e2c52] text-[#0e2c52] shadow-sm hover:bg-[#0e2c52]/10"
+              className="mb-4 rounded-full border border-[#0e2c52]/25 bg-white px-5 py-2 text-sm font-semibold text-[#0e2c52] shadow-sm transition-colors hover:border-[#0a2240]/40 hover:bg-[#0e2c52]/10 hover:text-[#0a2240] focus-visible:ring-[#0e2c52]"
             >
               {showAllMonths ? "Mostrar mes seleccionado y 3 anteriores" : "Mostrar todos los meses"}
             </Button>
