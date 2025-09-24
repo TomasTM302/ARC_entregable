@@ -37,7 +37,7 @@ export async function GET(req: Request) {
     }
 
     const params: any[] = []
-    const where: string[] = []
+    const where: string[] = ['u.rol_id = 2']
     if (month && /^\d{4}-\d{2}$/.test(month)) {
       const monthCol = HAS_ISSUED_COL ? 'm.fecha_emision' : 'm.fecha_vencimiento'
       where.push(`DATE_FORMAT(${monthCol}, '%Y-%m') = ?`)

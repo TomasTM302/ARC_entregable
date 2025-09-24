@@ -46,6 +46,8 @@ export default function AvisosPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   useEffect(() => {
     if (success === "true") {
@@ -95,29 +97,46 @@ export default function AvisosPage() {
   const handleDeleteClick = (e: React.MouseEvent, notice: Notice) => {
     e.preventDefault()
     e.stopPropagation()
-    // Doble verificación
-    const seguro = window.confirm("¿Estás seguro de que quieres eliminar este aviso? Esta acción no se puede deshacer.");
-    if (!seguro) return;
-    // Actualizar fecha de expiración en la base de datos
-    const hoy = new Date();
-    const pad = (n: number) => n.toString().padStart(2, '0');
-    const fechaHoy = `${hoy.getFullYear()}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())} ${pad(hoy.getHours())}:${pad(hoy.getMinutes())}:${pad(hoy.getSeconds())}`;
-    fetch(`/api/avisos/${notice.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fecha_expiracion: fechaHoy })
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setNotices(prev => prev.filter(n => n.id !== notice.id))
-          setDeleteSuccess(true)
-          setTimeout(() => setDeleteSuccess(false), 4000)
-        }
-      })
-      .catch(() => {/* opcional: mostrar error */})
-    setSelectedNotice(null)
+    setSelectedNotice(notice)
+    setDeleteError(null)
+    setIsDeleteModalOpen(true)
+  }
+
+  const closeDeleteModal = () => {
     setIsDeleteModalOpen(false)
+    setIsDeleting(false)
+    setDeleteError(null)
+    setSelectedNotice(null)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!selectedNotice) return
+    setIsDeleting(true)
+    setDeleteError(null)
+
+    const hoy = new Date()
+    const pad = (n: number) => n.toString().padStart(2, "0")
+    const fechaHoy = `${hoy.getFullYear()}-${pad(hoy.getMonth() + 1)}-${pad(hoy.getDate())} ${pad(hoy.getHours())}:${pad(hoy.getMinutes())}:${pad(hoy.getSeconds())}`
+
+    try {
+      const res = await fetch(`/api/avisos/${selectedNotice.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fecha_expiracion: fechaHoy }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || "No se pudo eliminar el aviso")
+      }
+      setNotices((prev) => prev.filter((n) => n.id !== selectedNotice.id))
+      setDeleteSuccess(true)
+      setTimeout(() => setDeleteSuccess(false), 4000)
+      closeDeleteModal()
+    } catch (err: any) {
+      const message = err?.message || "Ocurrió un error al eliminar el aviso"
+      setDeleteError(message)
+      setIsDeleting(false)
+    }
   }
 
   // Determinar la URL de retorno basada en el parámetro "from"
@@ -244,8 +263,11 @@ export default function AvisosPage() {
       <EditNoticeModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} notice={selectedNotice} />
       <DeleteNoticeModal
         isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
+        onClose={closeDeleteModal}
         notice={selectedNotice}
+        onConfirm={handleConfirmDelete}
+        isProcessing={isDeleting}
+        errorMessage={deleteError}
       />
     </main>
   )

@@ -19,6 +19,7 @@ import {
   ArrowLeft,
 } from "lucide-react"
 import { useState } from "react"
+import { cn } from "@/lib/utils"
 
 interface DesktopLayoutProps {
   children: ReactNode
@@ -40,7 +41,10 @@ export default function DesktopLayout({ children }: DesktopLayoutProps) {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
       <div
-        className={`${sidebarOpen ? "w-64" : "w-20"} bg-[#0e2c52] text-white transition-all duration-300 ease-in-out fixed h-screen z-10`}
+        className={cn(
+          "bg-[#0e2c52] text-white transition-all duration-300 ease-in-out fixed h-screen z-10",
+          sidebarOpen ? "w-64" : "w-20",
+        )}
       >
         <div className="p-4 flex items-center justify-between">
           {sidebarOpen ? (
@@ -124,7 +128,12 @@ export default function DesktopLayout({ children }: DesktopLayoutProps) {
       </div>
 
       {/* Main content */}
-      <div className={`flex-1 bg-[#0e2c52] overflow-hidden ml-${sidebarOpen ? "64" : "20"}`}>
+      <div
+        className={cn(
+          "flex-1 bg-[#0e2c52] overflow-hidden transition-all duration-300 ease-in-out",
+          sidebarOpen ? "ml-64" : "ml-20",
+        )}
+      >
         <header className="bg-[#0e2c52] text-white p-4 border-b border-[#1a4580]">
           <div className="flex justify-between items-center">
             <h1 className="text-xl font-semibold text-white">

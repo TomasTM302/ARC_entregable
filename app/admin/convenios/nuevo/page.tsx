@@ -27,8 +27,8 @@ export default function NuevoConvenioPage() {
 
   // Cargar usuarios al montar la página
   useEffect(() => {
-    fetchUsers()
-  }, [])
+    fetchUsers('resident')
+  }, [fetchUsers])
 
   const [selectedUser, setSelectedUser] = useState("")
   const [numberOfPayments, setNumberOfPayments] = useState(1)
