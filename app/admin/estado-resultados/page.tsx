@@ -711,15 +711,15 @@ export default function EstadoResultadosPage() {
                 <Button
                   variant="outline"
                   onClick={handlePrint}
-                  className="flex items-center gap-2 rounded-xl border-transparent px-4 py-2 text-sm font-semibold text-[#0e2c52] shadow-none transition-colors hover:bg-[#0e2c52]/10 hover:text-[#0a2240] focus-visible:ring-[#0e2c52]"
+                  className="flex items-center gap-2 rounded-xl border-transparent px-4 py-2 text-sm font-semibold text-[#fffff] shadow-none transition-colors hover:bg-[#0e2c52]/10 hover:text-[#0a2240] focus-visible:ring-[#0e2c52]"
                 >
-                  <Printer className="h-4 w-4" />
+                  <Printer className="h-4 w-4"/>
                   Imprimir
                 </Button>
                 <Button
                   variant="outline"
                   onClick={handleDownloadExcel}
-                  className="flex items-center gap-2 rounded-xl border-transparent px-4 py-2 text-sm font-semibold text-[#0e2c52] shadow-none transition-colors hover:bg-[#0e2c52]/10 hover:text-[#0a2240] focus-visible:ring-[#0e2c52]"
+                  className="flex items-center gap-2 rounded-xl border-transparent px-4 py-2 text-sm font-semibold text-[#ffffff] shadow-none transition-colors hover:bg-[#0e2c52]/10 hover:text-[#0a2240] focus-visible:ring-[#0e2c52]"
                 >
                   <FileSpreadsheet className="h-4 w-4" />
                   Excel
