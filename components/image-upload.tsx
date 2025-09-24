@@ -26,6 +26,8 @@ export default function ImageUpload({ maxFiles = 5, maxSize = 5, onImagesChange,
   const [items, setItems] = useState<UploadItem[]>([])
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [driveStatus, setDriveStatus] = useState<"checking" | "ready" | "unavailable">("checking")
+  const [driveMessage, setDriveMessage] = useState<string | null>(null)
 
   // Efecto para notificar cambios de URLs de Drive (evitar loops)
   const lastUrlsRef = useRef<string[]>([])
@@ -39,6 +41,37 @@ export default function ImageUpload({ maxFiles = 5, maxSize = 5, onImagesChange,
     lastUrlsRef.current = urls
     onImagesChange(urls)
   }, [items])
+
+  useEffect(() => {
+    let cancelled = false
+    const checkHealth = async () => {
+      try {
+        const res = await fetch("/api/drive/health")
+        const data = await res.json().catch(() => ({}))
+        if (cancelled) return
+        if (res.ok && data?.ok) {
+          setDriveStatus("ready")
+          setDriveMessage(null)
+        } else {
+          throw new Error(data?.message || "Google Drive no está disponible")
+        }
+      } catch (err: any) {
+        if (cancelled) return
+        const rawMessage = err?.message || "No se pudo verificar Google Drive"
+        const friendlyMessage = /Falta variable de entorno/i.test(rawMessage)
+          ? "Faltan credenciales de Google Drive. Contacta a tu administrador para habilitar las cargas."
+          : rawMessage
+        setDriveStatus("unavailable")
+        setDriveMessage(friendlyMessage)
+      }
+    }
+    checkHealth()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const uploadsDisabled = driveStatus !== "ready"
 
   const startUpload = async (index: number) => {
     setItems((prev) => prev.map((it, i) => (i === index ? { ...it, status: "uploading", error: undefined } : it)))
@@ -64,6 +97,10 @@ export default function ImageUpload({ maxFiles = 5, maxSize = 5, onImagesChange,
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (uploadsDisabled) {
+      setError(driveMessage || "La biblioteca de archivos no está disponible actualmente")
+      return
+    }
     const selectedFiles = Array.from(e.target.files || [])
 
     // Check if adding these files would exceed the max number
@@ -113,6 +150,10 @@ export default function ImageUpload({ maxFiles = 5, maxSize = 5, onImagesChange,
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
+    if (uploadsDisabled) {
+      setError(driveMessage || "La biblioteca de archivos no está disponible actualmente")
+      return
+    }
     const droppedFiles = Array.from(e.dataTransfer.files)
     const imageFiles = droppedFiles.filter((file) => file.type.startsWith("image/"))
     if (items.length + imageFiles.length > maxFiles) {
@@ -144,10 +185,21 @@ export default function ImageUpload({ maxFiles = 5, maxSize = 5, onImagesChange,
 
   return (
     <div className="space-y-4">
+      {driveStatus === "checking" && (
+        <div className="rounded-md border border-dashed border-[#3b6dc7]/30 bg-[#e8f0fe]/40 p-3 text-sm text-[#0e2c52]">
+          Verificando conexión con Google Drive...
+        </div>
+      )}
+      {driveStatus === "unavailable" && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
+          <p className="font-semibold">Google Drive no está disponible</p>
+          <p className="mt-1 leading-relaxed">{driveMessage}</p>
+        </div>
+      )}
       <div
         className={`border-2 border-dashed rounded-lg p-6 text-center ${
           error ? "border-red-400 bg-red-50" : "border-gray-300"
-        }`}
+        } ${uploadsDisabled ? "cursor-not-allowed opacity-60" : ""}`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
       >
@@ -166,7 +218,11 @@ export default function ImageUpload({ maxFiles = 5, maxSize = 5, onImagesChange,
           <Button
             type="button"
             className="bg-[#e8f0fe] text-[#0e2c52] hover:bg-[#d8e0ee]"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => {
+              if (uploadsDisabled) return
+              fileInputRef.current?.click()
+            }}
+            disabled={uploadsDisabled}
           >
             Seleccionar archivos
           </Button>

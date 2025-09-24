@@ -1,7 +1,7 @@
 "use client"
 
 import type { Aviso as Notice } from "@/lib/types"
-import { X, AlertTriangle, Trash2 } from "lucide-react"
+import { X, AlertTriangle, Trash2, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 // Store eliminado; eliminación via API
 
@@ -9,20 +9,22 @@ interface DeleteNoticeModalProps {
   isOpen: boolean
   onClose: () => void
   notice: Notice | null
+  onConfirm: () => Promise<void> | void
+  isProcessing?: boolean
+  errorMessage?: string | null
 }
 
-export default function DeleteNoticeModal({ isOpen, onClose, notice }: DeleteNoticeModalProps) {
-  const handleDelete = async () => {
-    if (!notice) return
-    try {
-      // Aquí podrías invocar un DELETE si existe; hoy page de avisos ya hace PUT de expiración
-      await fetch(`/api/avisos/${notice.id}`, { method: "DELETE" }).catch(() => {})
-    } finally {
-      onClose()
-    }
-  }
-
+export default function DeleteNoticeModal({
+  isOpen,
+  onClose,
+  notice,
+  onConfirm,
+  isProcessing = false,
+  errorMessage,
+}: DeleteNoticeModalProps) {
   if (!isOpen || !notice) return null
+
+  const noticeTitle = notice.titulo || (notice as any)?.title || ""
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -41,16 +43,40 @@ export default function DeleteNoticeModal({ isOpen, onClose, notice }: DeleteNot
           <p className="text-gray-700">
             ¿Estás seguro de que deseas eliminar este aviso? Esta acción no se puede deshacer.
           </p>
-          <p className="font-medium mt-2 text-gray-900">{notice.title}</p>
+          {noticeTitle && <p className="font-medium mt-2 text-gray-900">{noticeTitle}</p>}
+          {errorMessage && (
+            <p className="mt-3 text-sm text-red-600" role="alert">
+              {errorMessage}
+            </p>
+          )}
         </div>
 
         <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-          <Button type="button" variant="destructive" onClick={onClose} className="text-white">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={isProcessing}
+            className="border-gray-300 text-gray-700 hover:bg-gray-100"
+          >
             Cancelar
           </Button>
-          <Button type="button" className="bg-red-600 hover:bg-red-700 text-white" onClick={handleDelete}>
-            <Trash2 className="mr-2 h-4 w-4" />
-            Eliminar
+          <Button
+            type="button"
+            className="bg-red-600 hover:bg-red-700 text-white"
+            onClick={onConfirm}
+            disabled={isProcessing}
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Eliminando...
+              </>
+            ) : (
+              <>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Eliminar
+              </>
+            )}
           </Button>
         </div>
       </div>

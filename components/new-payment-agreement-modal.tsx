@@ -151,8 +151,8 @@ export default function NewPaymentAgreementModal({ isOpen, onClose, onCreated }:
 
   // Cargar usuarios al abrir el modal
   useEffect(() => {
-    if (isOpen) fetchUsers();
-  }, [isOpen]);
+    if (isOpen) fetchUsers('resident');
+  }, [isOpen, fetchUsers]);
 
   // Cargar el día de pago vigente del condominio del usuario seleccionado
   useEffect(() => {

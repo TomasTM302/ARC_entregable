@@ -45,7 +45,7 @@ interface AuthState {
   logout: () => Promise<void> | void
   restore: () => Promise<void>
   setRememberMe: (value: boolean) => void
-  fetchUsers: () => Promise<void>
+  fetchUsers: (role?: UserRole | 'all') => Promise<void>
   getUsers: () => User[]
   register: (data: RegisterData) => Promise<{ success: boolean; message?: string }>
   deleteUser: (id: string) => Promise<{ success: boolean; message?: string }>
@@ -153,9 +153,14 @@ export const useAuthStore = create<AuthState>()(
         set({ rememberMe: value })
       },
 
-      fetchUsers: async () => {
+      fetchUsers: async (role: UserRole | 'all' = 'all') => {
         try {
-          const res = await fetch('/api/users')
+          const params = new URLSearchParams()
+          if (role && role !== 'all') {
+            params.set('role', role)
+          }
+          const url = params.size > 0 ? `/api/users?${params.toString()}` : '/api/users'
+          const res = await fetch(url)
           const data = await res.json()
           if (res.ok && data.success) {
             set({ users: data.users })
