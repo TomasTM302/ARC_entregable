@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Save, Calendar, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/lib/auth"
@@ -11,8 +11,12 @@ import { useRouter } from "next/navigation"
 
 export default function NuevaMultaPage() {
   const router = useRouter()
-  const { getUsers } = useAuthStore()
+  const { getUsers, fetchUsers } = useAuthStore()
   const users = getUsers()
+
+  useEffect(() => {
+    fetchUsers('resident')
+  }, [fetchUsers])
 
   const [formData, setFormData] = useState({
     userId: "",

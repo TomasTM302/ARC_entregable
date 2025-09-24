@@ -1,10 +1,32 @@
 import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import pool from '@/lib/db'
-import { appRoleFromDbRole, dbRoleFromAppRole } from '@/lib/roles'
+import { appRoleFromDbRole, dbRoleFromAppRole, type AppRole } from '@/lib/roles'
 
-export async function GET() {
+const ALL_ROLES_TOKEN = 'all'
+
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url)
+    const roleParam = (searchParams.get('role') || ALL_ROLES_TOKEN).toLowerCase()
+
+    const conditions: string[] = ['u.activo = TRUE']
+    const params: any[] = []
+
+    if (roleParam !== ALL_ROLES_TOKEN) {
+      const normalizedRole = normalizeRoleParam(roleParam)
+      if (normalizedRole) {
+        if (normalizedRole === 'resident') {
+          conditions.push('u.rol_id = 2')
+        } else {
+          conditions.push('LOWER(r.nombre) = LOWER(?)')
+          params.push(dbRoleFromAppRole(normalizedRole))
+        }
+      }
+    }
+
+    const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
+
     const [rows]: any = await pool.query(
       `SELECT
         u.id, u.nombre, u.apellido, u.email, u.telefono, u.fecha_registro,
@@ -15,7 +37,8 @@ export async function GET() {
       JOIN roles r ON u.rol_id = r.id
       LEFT JOIN usuario_propiedad up ON u.id = up.usuario_id
       LEFT JOIN propiedades p ON up.propiedad_id = p.id
-      WHERE u.activo = TRUE`
+      ${whereClause}`,
+      params,
     )
 
     const users = rows.map((u: any) => ({
@@ -37,6 +60,24 @@ export async function GET() {
       { success: false, message: 'Error del servidor' },
       { status: 500 }
     )
+  }
+}
+
+function normalizeRoleParam(role: string): AppRole | null {
+  switch (role) {
+    case 'admin':
+    case 'administrator':
+      return 'admin'
+    case 'resident':
+    case 'residente':
+      return 'resident'
+    case 'vigilante':
+      return 'vigilante'
+    case 'mantenimiento':
+    case 'maintenance':
+      return 'mantenimiento'
+    default:
+      return null
   }
 }
 
