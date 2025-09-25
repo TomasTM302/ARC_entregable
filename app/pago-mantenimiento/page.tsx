@@ -700,9 +700,10 @@ export default function PagoMantenimientoPage() {
           Volver al inicio
         </Link>
       </header>
-      <section className="container mx-auto flex-1 flex flex-col items-center justify-start py-8 px-4">
-        <div className="bg-white rounded-lg p-6 w-full max-w-md text-gray-800 mx-auto">
-          <h2 className="text-xl font-semibold mb-4">Información de Pago</h2>
+      <section className="container mx-auto flex-1 w-full py-8 px-4">
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start">
+          <div className="w-full rounded-lg bg-white p-4 text-gray-800 sm:p-6">
+            <h2 className="text-xl font-semibold mb-4">Información de Pago</h2>
 
           {/* Información de fecha límite */}
           <div className="mb-6 p-4 bg-blue-50 rounded-lg flex items-start">
@@ -1041,7 +1042,7 @@ export default function PagoMantenimientoPage() {
 
             {/* Mostrar datos bancarios si se selecciona transferencia */}
             {showBankDetails && (
-              <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+              <div className="mt-4 w-full rounded-lg border border-gray-200 bg-gray-50 p-4 sm:p-6">
                 <h3 className="text-md font-medium mb-3 flex items-center">
                   <Building className="h-4 w-4 mr-2 text-gray-600" />
                   Datos para transferencia
@@ -1049,7 +1050,7 @@ export default function PagoMantenimientoPage() {
 
                 {bankingDetails ? (
                   <div className="space-y-3 text-sm">
-                    <div>
+                    <div className="w-full">
                       <p className="text-gray-500">Banco</p>
                       <p className="font-medium">{bankingDetails.bankName}</p>
                     </div>
@@ -1064,7 +1065,7 @@ export default function PagoMantenimientoPage() {
                       <p className="font-medium">{bankingDetails.clabe}</p>
                     </div>
 
-                    <div className="pt-2 border-t border-gray-200">
+                    <div className="border-t border-gray-200 pt-2">
                       <div className="flex justify-between items-center">
                         <p className="text-gray-500">Referencia</p>
                         <button
@@ -1085,14 +1086,14 @@ export default function PagoMantenimientoPage() {
                           )}
                         </button>
                       </div>
-                      <p className="font-medium bg-blue-50 p-2 rounded mt-1 text-center">{reference}</p>
+                      <p className="mt-1 rounded bg-blue-50 p-2 text-center font-medium">{reference}</p>
                       <p className="text-xs text-gray-500 mt-1">
                         Esta referencia incluye información sobre su pago. Por favor úsela exactamente como se muestra.
                       </p>
                     </div>
                   </div>
                 ) : (
-                  <div className="p-4 bg-red-50 rounded-md">
+                  <div className="rounded-md bg-red-50 p-4">
                     <div className="flex items-start">
                       <AlertCircle className="h-5 w-5 text-red-500 mr-2 flex-shrink-0" />
                       <div>
@@ -1106,7 +1107,7 @@ export default function PagoMantenimientoPage() {
                 )}
 
                 {bankingDetails && (
-                  <div className="mt-4 bg-blue-50 p-3 rounded-md flex items-start">
+                  <div className="mt-4 flex items-start rounded-md bg-blue-50 p-3">
                     <Info className="h-4 w-4 text-blue-500 mr-2 mt-0.5" />
                     <p className="text-xs text-blue-700">
                       Una vez realizada la transferencia, por favor envíe el comprobante de pago a la administración
@@ -1128,7 +1129,7 @@ export default function PagoMantenimientoPage() {
 
           {/* Pago con tarjeta via Stripe */}
           {showStripe && paymentMethod === "card" && (
-            <div className="mt-6">
+            <div className="mt-6 w-full">
               <h3 className="text-lg font-medium mb-2">Pago con tarjeta</h3>
               <StripeCardPayment
                 amount={Number(totalAmount)}
@@ -1220,12 +1221,13 @@ export default function PagoMantenimientoPage() {
               />
             </div>
           )}
+          </div>
           {showTicket && paymentMethod === "transfer" && (
-            <div className="mt-6 p-6 bg-white border border-gray-200 rounded-lg shadow-md">
+            <div className="w-full rounded-lg border border-gray-200 bg-white p-4 shadow-md sm:p-6">
               <h3 className="text-lg font-bold text-center mb-4">Ticket de Pago</h3>
 
               <div className="space-y-4">
-                <div className="p-3 bg-blue-50 rounded-md">
+                <div className="w-full rounded-md bg-blue-50 p-3">
                   <p className="text-sm text-center font-medium">
                     Por favor realiza tu transferencia con los siguientes datos:
                   </p>
@@ -1248,7 +1250,7 @@ export default function PagoMantenimientoPage() {
                       <p className="font-medium">{bankingDetails.clabe}</p>
                     </div>
 
-                    <div className="pt-3 border-t border-gray-200">
+                    <div className="border-t border-gray-200 pt-3">
                       <p className="text-gray-500 text-sm">Monto a transferir</p>
                       <p className="font-bold text-lg">${totalAmount.toLocaleString()}</p>
                     </div>
@@ -1274,11 +1276,11 @@ export default function PagoMantenimientoPage() {
                           )}
                         </button>
                       </div>
-                      <p className="font-medium bg-blue-50 p-2 rounded mt-1 text-center">{reference}</p>
+                      <p className="mt-1 rounded bg-blue-50 p-2 text-center font-medium">{reference}</p>
                     </div>
                   </div>
                 ) : (
-                  <div className="p-4 bg-red-50 rounded-md">
+                  <div className="rounded-md bg-red-50 p-4">
                     <div className="flex items-start">
                       <AlertCircle className="h-5 w-5 text-red-500 mr-2 flex-shrink-0" />
                       <div>
@@ -1291,7 +1293,7 @@ export default function PagoMantenimientoPage() {
                   </div>
                 )}
 
-                <div className="mt-4 bg-yellow-50 p-3 rounded-md flex items-start">
+                <div className="mt-4 flex items-start rounded-md bg-yellow-50 p-3">
                   <AlertCircle className="h-4 w-4 text-yellow-500 mr-2 mt-0.5" />
                   <p className="text-xs text-yellow-700">
                     Una vez realizada la transferencia, por favor envía el comprobante de pago a la administración para
@@ -1300,7 +1302,7 @@ export default function PagoMantenimientoPage() {
                 </div>
 
                 {transferLinked && (
-                  <div className="mt-4 border border-gray-200 rounded-md p-3 bg-gray-50">
+                  <div className="mt-4 w-full rounded-md border border-gray-200 bg-gray-50 p-4 sm:p-6">
                     <p className="text-sm font-semibold mb-2">Resumen de conceptos vinculados</p>
                     {transferLinked.pagoId != null && (
                       <p className="text-xs text-gray-600 mb-1">ID de verificación: <span className="font-mono">{String(transferLinked.pagoId)}</span></p>
@@ -1341,13 +1343,22 @@ export default function PagoMantenimientoPage() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 gap-3 mt-4">
-                  <Button className="w-full bg-[#4a9eff] hover:bg-[#3b8de0] text-white" onClick={downloadTransferTicket}>
-                    Descargar ticket (PDF)
-                  </Button>
-                  <Button variant="outline" className="w-full" onClick={() => { setShowTicket(false); window.location.href = "/home" }}>
-                    Ir al inicio
-                  </Button>
+                <div className="mt-4 w-full rounded-md bg-gray-50 p-4 sm:p-6">
+                  <div className="grid grid-cols-1 gap-3">
+                    <Button className="w-full bg-[#4a9eff] hover:bg-[#3b8de0] text-white" onClick={downloadTransferTicket}>
+                      Descargar ticket (PDF)
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        setShowTicket(false)
+                        window.location.href = "/home"
+                      }}
+                    >
+                      Ir al inicio
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
