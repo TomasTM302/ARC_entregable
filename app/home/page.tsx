@@ -100,7 +100,7 @@ export default function Home() {
             <Link
               key={index}
               href={service.href}
-              className={`block w-full aspect-square md:w-64 md:h-64 md:aspect-auto lg:w-80 lg:h-80 hover:scale-105 transition-transform duration-300 ${
+              className={`block w-full aspect-square sm:w-48 sm:h-48 sm:aspect-auto md:w-64 md:h-64 lg:w-80 lg:h-80 hover:scale-105 transition-transform duration-300 ${
                 services.length % 2 !== 0 && index === services.length - 1 ? "sm:col-span-2 sm:mx-auto" : ""
               }`}
             >
