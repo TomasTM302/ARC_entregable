@@ -95,13 +95,13 @@ export default function Home() {
         <h1 className="text-white text-6xl md:text-7xl font-bold mb-16 text-center">Bienvenidos</h1>
 
         {/* Services Grid */}
-        <div className="grid grid-cols-2 gap-x-12 gap-y-8 md:gap-x-16 lg:gap-x-20 max-w-2xl md:max-w-4xl lg:max-w-6xl">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 md:gap-x-16 md:gap-y-12 lg:gap-x-20 w-full max-w-sm sm:max-w-2xl md:max-w-4xl lg:max-w-6xl">
           {services.map((service, index) => (
             <Link
               key={index}
               href={service.href}
-              className={`block w-48 h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 hover:scale-105 transition-transform duration-300 ${
-                services.length % 2 !== 0 && index === services.length - 1 ? "col-span-2 mx-auto" : ""
+              className={`block w-full aspect-square md:w-64 md:h-64 md:aspect-auto lg:w-80 lg:h-80 hover:scale-105 transition-transform duration-300 ${
+                services.length % 2 !== 0 && index === services.length - 1 ? "sm:col-span-2 sm:mx-auto" : ""
               }`}
             >
               <Image
