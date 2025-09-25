@@ -95,7 +95,7 @@ export default function Home() {
         <h1 className="text-white text-6xl md:text-7xl font-bold mb-16 text-center">Bienvenidos</h1>
 
         {/* Services Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 md:gap-x-16 md:gap-y-12 lg:gap-x-20 w-full max-w-sm sm:max-w-2xl md:max-w-4xl lg:max-w-6xl">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 md:gap-x-16 md:gap-y-12 lg:gap-x-20 w-full sm:w-auto max-w-sm sm:max-w-2xl md:max-w-4xl lg:max-w-6xl">
           {services.map((service, index) => (
             <Link
               key={index}
