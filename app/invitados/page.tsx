@@ -118,6 +118,11 @@ export default function InvitadosPage() {
       })()
       setShowQR(true)
 
+      // Programar la generación automática del PDF una vez que el QR haya sido renderizado
+      setTimeout(() => {
+        void exportToPDF()
+      }, 150)
+
       // Limpiar formulario tras 5s
       setTimeout(() => {
         setFormData({
